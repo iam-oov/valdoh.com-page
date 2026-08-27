@@ -151,8 +151,9 @@ li code {
 
 footer {
   display: flex;
-  gap: 1rem;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
   margin-top: 5rem;
   padding-top: 1.5rem;
   border-top: 1px solid var(--border);
@@ -164,6 +165,12 @@ footer {
   color: var(--muted);
   font-family: var(--mono);
   font-size: 0.85rem;
+}
+
+.sep {
+  font-size: 0.85rem;
+  line-height: 1;
+  opacity: 0.75;
 }
 
 .back {
