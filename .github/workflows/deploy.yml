@@ -47,11 +47,22 @@ jobs:
         env:
           CF_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        # Shapes come from what the dashboard actually issues, not from the
+        # docs page: the id is 32 hex + ".access", and current secrets carry a
+        # "cfast_" prefix rather than being the 64 hex chars the docs example
+        # shows. The dashboard's copy button also grabs the whole
+        # "CF-Access-Client-Id: " header line, so a too-long value means the
+        # prefix came along.
         run: |
-          echo "client id:     ${#CF_ID} chars, ends in .access: $(case "$CF_ID" in *.access) echo yes;; *) echo NO;; esac)"
+          echo "client id:     ${#CF_ID} chars"
           echo "client secret: ${#CF_SECRET} chars"
-          echo "expected:      id 40 chars ending in .access, secret 64 chars"
-          test -n "$CF_ID" -a -n "$CF_SECRET" || { echo "::error::a token secret is empty"; exit 1; }
+          case "$CF_ID" in
+            *' '*|*:*) echo "::error::client id still carries the CF-Access-Client-Id header prefix"; exit 1 ;;
+          esac
+          case "$CF_SECRET" in
+            *' '*|*:*) echo "::error::client secret still carries the CF-Access-Client-Secret header prefix"; exit 1 ;;
+          esac
+          case "$CF_ID" in *.access) ;; *) echo "::error::client id does not end in .access"; exit 1 ;; esac
 
       - name: Deploy through the tunnel
         env:
