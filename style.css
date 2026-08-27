@@ -150,11 +150,20 @@ li code {
 }
 
 footer {
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
   margin-top: 5rem;
   padding-top: 1.5rem;
   border-top: 1px solid var(--border);
   color: var(--muted);
   font-size: 0.9rem;
+}
+
+.version {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.85rem;
 }
 
 .back {

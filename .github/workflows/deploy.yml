@@ -85,6 +85,11 @@ jobs:
           git fetch origin main
           git reset --hard origin/main
 
+          # Stamp the footer placeholder. This dirties the worktree, which the
+          # reset above cleans on the next deploy, so it re-applies every time.
+          SHA=$(git rev-parse --short HEAD)
+          sed -i "s|@SHA@|${SHA}|g" index.html memodi/index.html
+
           for path in / /memodi/ /style.css; do
             # || true: a dead server makes curl exit nonzero, which under
             # `set -e` would abort before the message below explains why.
@@ -95,5 +100,14 @@ jobs:
               exit 1
             fi
           done
-          echo "Deploy verified: $(git rev-parse --short HEAD)"
+
+          # The stamped footer makes the served bytes prove which commit they
+          # came from — a 200 alone would still pass on a stale copy.
+          for path in / /memodi/; do
+            curl -s "http://127.0.0.1:8088${path}" | grep -q "$SHA" || {
+              echo "DEPLOY FAILED: ${path} is not serving ${SHA}"
+              exit 1
+            }
+          done
+          echo "Deploy verified: ${SHA} live on / and /memodi/"
           REMOTE
