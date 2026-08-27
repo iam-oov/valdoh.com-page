@@ -1,0 +1,16 @@
+[Unit]
+Description=valdoh.com static site
+After=network.target
+
+[Service]
+Type=simple
+User=memodi
+WorkingDirectory=/home/memodi/valdoh.com-page
+# ponytail: stdlib http.server, single-threaded and no cache headers.
+# Swap for Caddy if the Cloudflare edge cache ever stops being enough.
+ExecStart=/usr/bin/python3 -m http.server 8088 --bind 127.0.0.1
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>memodi — persistent memory for Claude Code</title>
+    <meta
+      name="description"
+      content="MCP server that gives Claude Code persistent memory across workspaces, projects and machines."
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🐦‍⬛</text></svg>"
+    />
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <main>
+      <a class="back" href="/">← valdoh.com</a>
+
+      <img class="logo" src="/img/memodi-logo.png" alt="memodi" />
+
+      <p class="lede">
+        <strong>Memoria Distribuida</strong> — MCP server that gives Claude Code
+        persistent memory across workspaces, projects and machines. It saves
+        decisions, bugs and discoveries proactively and recalls them by keyword,
+        semantics or graph, with no extra LLM calls.
+      </p>
+
+      <h2>Install</h2>
+      <pre><code>curl -sf https://raw.githubusercontent.com/iam-oov/memodi/main/install.sh | sh</code></pre>
+      <p class="note">
+        Then restart Claude Code and run <code>/memodi:start</code> in the folder
+        that holds your repos. That folder becomes a workspace, and every repo
+        under it shares its memory.
+      </p>
+
+      <h2>What does memodi do?</h2>
+
+      <div class="feature">
+        <h3>One memory for the whole product</h3>
+        <p>
+          Your product is not one repo — it's the API, the worker, the billing
+          service. Point memodi at the folder that holds them, once. From then
+          on the decision you made in <code>api/</code> is right there when
+          you're working in <code>billing/</code>.
+        </p>
+      </div>
+
+      <div class="feature">
+        <h3>Pick up exactly where you left off</h3>
+        <p>
+          Close a session and the next one — tomorrow, or on your other machine
+          — opens with your pending work already on screen. The Monday "where
+          was I?" comes pre-answered.
+        </p>
+      </div>
+
+      <div class="feature">
+        <h3>It remembers the way you ask</h3>
+        <p>
+          By exact word, by idea ("didn't we solve something like this
+          before?"), or by connection ("what breaks if I touch this?"). And it
+          saves as you work, so you never have to remember to remember.
+        </p>
+      </div>
+
+      <footer>
+        <a href="https://github.com/iam-oov/memodi">github.com/iam-oov/memodi</a>
+        · MIT
+      </footer>
+    </main>
+  </body>
+</html>
