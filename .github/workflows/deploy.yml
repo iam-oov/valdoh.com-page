@@ -1,0 +1,71 @@
+name: Deploy
+
+# Push-based deploy to the home server over SSH THROUGH the Cloudflare Tunnel,
+# reusing the same Access service token and pi.valdoh.com hostname that
+# iam-oov/memodi deploys with.
+#
+# Required GitHub secrets (same values as the memodi repo):
+#   CF_ACCESS_CLIENT_ID     - Cloudflare Access service token client ID
+#   CF_ACCESS_CLIENT_SECRET - Cloudflare Access service token client secret
+#   PI_SSH_USER             - SSH user on the server (repo cloned at ~/valdoh.com-page)
+#   PI_SSH_KEY              - private SSH key authorized for PI_SSH_USER
+#
+# No systemctl restart: the site is served by `python3 -m http.server`, which
+# reads from disk on every request. That is also why PI_SSH_USER needs no
+# sudoers entry here.
+#
+# Runs are safe to overlap: `git reset --hard origin/main` always lands on
+# whatever origin/main is at that moment, so out-of-order runs converge on the
+# newest commit rather than deploying an older one.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install cloudflared
+        run: |
+          curl -fsSL -o cloudflared.deb \
+            https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+          sudo dpkg -i cloudflared.deb
+
+      - name: Configure SSH key
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.PI_SSH_KEY }}" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+
+      - name: Deploy through the tunnel
+        env:
+          TUNNEL_SERVICE_TOKEN_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          TUNNEL_SERVICE_TOKEN_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        # StrictHostKeyChecking=accept-new: the runner is ephemeral, so TOFU
+        # pinning is meaningless; transport auth already happens at the Access
+        # edge via the service token.
+        run: |
+          ssh -i ~/.ssh/id_deploy \
+            -o StrictHostKeyChecking=accept-new \
+            -o "ProxyCommand=cloudflared access ssh --hostname %h" \
+            "${{ secrets.PI_SSH_USER }}@pi.valdoh.com" 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          cd ~/valdoh.com-page
+          git fetch origin main
+          git reset --hard origin/main
+
+          for path in / /memodi/ /style.css; do
+            # || true: a dead server makes curl exit nonzero, which under
+            # `set -e` would abort before the message below explains why.
+            CODE=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:8088${path}" || true)
+            if [ "$CODE" != "200" ]; then
+              echo "DEPLOY FAILED: ${path} returned ${CODE}"
+              systemctl status valdoh-site --no-pager || true
+              exit 1
+            fi
+          done
+          echo "Deploy verified: $(git rev-parse --short HEAD)"
+          REMOTE

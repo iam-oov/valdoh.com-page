@@ -38,10 +38,21 @@ above the catch-all `service: http_status:404`.
 
 **2. Clone and serve**
 
-As user `memodi`:
+Clone as user `memodi` — the workflow deploys as that user, and the unit runs as it:
 
 ```bash
-git clone https://github.com/iam-oov/valdoh.com-page.git /home/memodi/valdoh.com-page
+sudo -u memodi git clone https://github.com/iam-oov/valdoh.com-page.git /home/memodi/valdoh.com-page
+```
+
+A plain `sudo git clone` leaves the worktree owned by root. The site still serves (the files stay
+world-readable) but every CI deploy fails, because `git reset --hard` as `memodi` hits both a
+permission error and git's dubious-ownership guard. Recover with
+`sudo chown -R memodi:memodi /home/memodi/valdoh.com-page`.
+
+Install the unit from an account with full sudo. `memodi`'s sudoers entry is scoped to
+`systemctl restart memodi` alone, so it cannot do this itself:
+
+```bash
 sudo install -m 644 /home/memodi/valdoh.com-page/deploy/valdoh-site.service \
   /etc/systemd/system/valdoh-site.service
 sudo systemctl daemon-reload
@@ -50,7 +61,9 @@ curl -sI http://127.0.0.1:8088/ | head -1   # 200
 ```
 
 Binds to `127.0.0.1` — cloudflared connects locally, so the LAN must not reach the port
-directly. Same reason memodi binds to loopback.
+directly. Same reason memodi binds to loopback. The served root is pinned with `--directory`
+rather than `WorkingDirectory`, so a CWD that failed to apply cannot expose `/` through the
+tunnel.
 
 **3. Cloudflare public hostname**
 
@@ -76,7 +89,20 @@ hostname in step 3 exists only so the record resolves through Cloudflare — it 
 
 ## Deploy
 
-No restart needed: the file server reads from disk on every request.
+Automatic on every push to `main` — `.github/workflows/deploy.yml` SSHes into the server through
+the tunnel, resets the clone to `origin/main`, and checks the three main routes return 200.
+No restart step: the file server reads from disk on every request.
+
+It needs four repo secrets, the **same values already set on the memodi repo**:
+
+```bash
+gh secret set CF_ACCESS_CLIENT_ID     --repo iam-oov/valdoh.com-page
+gh secret set CF_ACCESS_CLIENT_SECRET --repo iam-oov/valdoh.com-page
+gh secret set PI_SSH_USER             --repo iam-oov/valdoh.com-page   # memodi
+gh secret set PI_SSH_KEY              --repo iam-oov/valdoh.com-page < ~/.ssh/<deploy-key>
+```
+
+Manual deploy, if you ever need it:
 
 ```bash
 ssh memodi@pi.valdoh.com 'cd ~/valdoh.com-page && git pull'

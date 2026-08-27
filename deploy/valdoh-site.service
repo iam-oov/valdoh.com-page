@@ -5,10 +5,13 @@ After=network.target
 [Service]
 Type=simple
 User=memodi
-WorkingDirectory=/home/memodi/valdoh.com-page
-# ponytail: stdlib http.server, single-threaded and no cache headers.
-# Swap for Caddy if the Cloudflare edge cache ever stops being enough.
-ExecStart=/usr/bin/python3 -m http.server 8088 --bind 127.0.0.1
+# --directory rather than WorkingDirectory: the served root must be explicit,
+# so a CWD that failed to apply cannot expose / through the tunnel.
+# ponytail: stdlib http.server. It is threaded and answers conditional
+# requests, but speaks HTTP/1.0 and sends no Cache-Control or compression.
+# Cloudflare covers all three at the edge. Swap for nginx if this origin ever
+# needs path routing, custom error pages, or auth.
+ExecStart=/usr/bin/python3 -m http.server 8088 --bind 127.0.0.1 --directory /home/memodi/valdoh.com-page
 Restart=on-failure
 RestartSec=5
 
