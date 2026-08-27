@@ -40,6 +40,19 @@ jobs:
           printf '%s\n' "${{ secrets.PI_SSH_KEY }}" > ~/.ssh/id_deploy
           chmod 600 ~/.ssh/id_deploy
 
+      # An Access service token cloudflared does not accept makes it fall back
+      # to the interactive browser login, which on a runner just hangs. Check
+      # the shape up front: lengths and suffixes are not secret, the values are.
+      - name: Check Access service token shape
+        env:
+          CF_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        run: |
+          echo "client id:     ${#CF_ID} chars, ends in .access: $(case "$CF_ID" in *.access) echo yes;; *) echo NO;; esac)"
+          echo "client secret: ${#CF_SECRET} chars"
+          echo "expected:      id 40 chars ending in .access, secret 64 chars"
+          test -n "$CF_ID" -a -n "$CF_SECRET" || { echo "::error::a token secret is empty"; exit 1; }
+
       - name: Deploy through the tunnel
         env:
           TUNNEL_SERVICE_TOKEN_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
@@ -47,8 +60,12 @@ jobs:
         # StrictHostKeyChecking=accept-new: the runner is ephemeral, so TOFU
         # pinning is meaningless; transport auth already happens at the Access
         # edge via the service token.
+        # BatchMode + timeout: without them, a rejected token sends cloudflared
+        # into its browser login prompt and the job hangs until the 6h job cap.
         run: |
-          ssh -i ~/.ssh/id_deploy \
+          timeout 180 ssh -i ~/.ssh/id_deploy \
+            -o BatchMode=yes \
+            -o ConnectTimeout=30 \
             -o StrictHostKeyChecking=accept-new \
             -o "ProxyCommand=cloudflared access ssh --hostname %h" \
             "${{ secrets.PI_SSH_USER }}@pi.valdoh.com" 'bash -s' <<'REMOTE'
