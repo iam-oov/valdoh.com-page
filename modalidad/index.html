@@ -32,7 +32,7 @@ body{
   background:var(--papel);
   color:var(--tinta);
   font-family:"Segoe UI",-apple-system,BlinkMacSystemFont,Roboto,"Helvetica Neue",Arial,sans-serif;
-  font-size:17px;line-height:1.6;
+  font-size:1.0625rem;line-height:1.6;
   -webkit-font-smoothing:antialiased;
 }
 .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
@@ -40,29 +40,29 @@ body{
 /* ---------- estructura ---------- */
 .wrap{max-width:1180px;margin:0 auto;padding:0 24px 80px}
 header.top{padding:44px 0 26px;border-bottom:2px solid var(--tinta)}
-h1{font-size:33px;line-height:1.12;font-weight:700;letter-spacing:-.02em;margin:0 0 8px}
-header.top p{margin:0;max-width:62ch;color:var(--tinta-70);font-size:17px}
+h1{font-size:2.0625rem;line-height:1.12;font-weight:700;letter-spacing:-.02em;margin:0 0 8px}
+header.top p{margin:0;max-width:62ch;color:var(--tinta-70);font-size:1.0625rem}
 .franja{margin-top:18px;padding:14px 18px;background:var(--tinta);color:var(--papel);
-  border-radius:3px;font-size:16.5px;line-height:1.5;max-width:72ch}
+  border-radius:3px;font-size:1.03125rem;line-height:1.5;max-width:72ch}
 .franja b{color:#fff}
 .franja+.franja{margin-top:10px}
 .grid{display:grid;grid-template-columns:1fr 400px;gap:52px;align-items:start;margin-top:34px}
 @media(max-width:900px){
   .grid{grid-template-columns:1fr;gap:34px}
   .wrap{padding:0 18px 60px}
-  h1{font-size:27px}
+  h1{font-size:1.6875rem}
 }
 
 /* ---------- pasos ---------- */
 .paso{margin-bottom:38px}
 .paso-tit{display:flex;align-items:center;gap:12px;margin:0 0 6px}
-.paso-tit b{font-size:20px;font-weight:700;letter-spacing:-.01em}
-.paso-tit i{font-style:normal;font-size:13.5px;font-weight:700;color:#fff;background:var(--verde);
+.paso-tit h2{font-size:1.25rem;font-weight:700;letter-spacing:-.01em;margin:0}
+.paso-tit i{font-style:normal;font-size:.84375rem;font-weight:700;color:#fff;background:var(--verde);
   padding:4px 13px;border-radius:999px;letter-spacing:.03em;white-space:nowrap;
   font-variant-numeric:tabular-nums}
-.paso-sub{margin:0 0 16px;color:var(--tinta-70);font-size:16px;max-width:62ch}
+.paso-sub{margin:0 0 16px;color:var(--tinta-70);font-size:1rem;max-width:62ch}
 ul.previo{list-style:none;margin:0;padding:0}
-ul.previo li{position:relative;padding:0 0 13px 32px;font-size:16.5px;line-height:1.55;max-width:66ch}
+ul.previo li{position:relative;padding:0 0 13px 32px;font-size:1.03125rem;line-height:1.55;max-width:66ch}
 ul.previo li:before{content:"✓";position:absolute;left:2px;top:0;color:var(--verde);font-weight:700}
 ul.previo a{color:var(--verde);font-weight:600}
 
@@ -73,14 +73,14 @@ ul.previo a{color:var(--verde);font-weight:600}
 }
 #drop:hover,#drop.over{border-color:var(--verde);background:rgba(255,255,255,.9)}
 #drop.over{border-style:solid}
-.btn-elegir{font:inherit;font-size:19px;font-weight:700;padding:16px 28px;background:var(--verde);
+.btn-elegir{font:inherit;font-size:1.1875rem;font-weight:700;padding:16px 28px;background:var(--verde);
   color:#fff;border:0;border-radius:4px;cursor:pointer;transition:background .15s}
 .btn-elegir:hover{background:#23483a}
-#drop .small{font-size:14.5px;color:var(--tinta-45);margin-top:12px}
+#drop .small{font-size:.90625rem;color:var(--tinta-70);margin-top:12px}
 #drop.busy{pointer-events:none;opacity:.6}
 
 .aviso{margin-top:12px;padding:11px 14px;border-left:3px solid var(--brasa);
-  background:rgba(255,255,255,.7);font-size:15.5px;border-radius:0 2px 2px 0}
+  background:rgba(255,255,255,.7);font-size:.96875rem;border-radius:0 2px 2px 0}
 .aviso.err{border-color:var(--alerta)}
 .aviso.ok{border-color:var(--verde)}
 .aviso b{display:block;margin-bottom:2px}
@@ -90,70 +90,92 @@ ul.previo a{color:var(--verde);font-weight:600}
 @media(max-width:560px){.campos{grid-template-columns:1fr}.btn-elegir{width:100%}}
 .campo{display:flex;flex-direction:column}
 .campo.ancho{grid-column:1/-1}
-label{font-size:15px;font-weight:600;color:var(--tinta-70);margin-bottom:5px}
-label .hint{font-weight:400;color:var(--tinta-45)}
+label{font-size:.9375rem;font-weight:600;color:var(--tinta-70);margin-bottom:5px}
+label .hint{font-weight:400;color:var(--tinta-70)}
 input[type=text],input[type=date],input[type=number],select{
-  font:inherit;font-size:18px;color:var(--tinta);background:transparent;
-  border:0;border-bottom:1.5px solid var(--linea);padding:9px 2px;border-radius:0;
-  width:100%;transition:border-color .15s;
+  font:inherit;font-size:1.1875rem;color:var(--tinta);background:#fff;
+  border:1.5px solid var(--linea);border-radius:6px;height:54px;padding:0 14px;
+  width:100%;transition:border-color .15s,box-shadow .15s;
 }
-input:focus,select:focus{outline:0;border-bottom-color:var(--verde)}
+input:focus,select:focus{border-color:var(--verde);outline:3px solid rgba(44,92,72,.35);outline-offset:2px}
 select{cursor:pointer;-webkit-appearance:none;appearance:none;
   background-image:linear-gradient(45deg,transparent 50%,var(--tinta-45) 50%),linear-gradient(135deg,var(--tinta-45) 50%,transparent 50%);
-  background-position:calc(100% - 11px) 55%,calc(100% - 6px) 55%;
-  background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:24px}
-.check{display:flex;align-items:center;gap:9px;padding-top:20px}
-.check input{width:22px;height:22px;accent-color:var(--verde);margin:0}
-.check label{margin:0;font-size:16.5px;color:var(--tinta);font-weight:500}
+  background-position:calc(100% - 18px) 55%,calc(100% - 13px) 55%;
+  background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:38px}
+.check{padding-top:20px}
+.check-card{display:flex;align-items:center;gap:14px;min-height:60px;margin:0;padding:10px 14px;
+  background:#fff;border:1.5px solid var(--linea);border-radius:6px;cursor:pointer}
+.check-card input{width:28px;height:28px;accent-color:var(--verde);margin:0;flex:none}
+.check-txt{display:flex;flex-direction:column;line-height:1.35}
+.check-txt b{font-size:1.0625rem;font-weight:600;color:var(--tinta)}
+.check-txt span{font-size:.9375rem;font-weight:400;color:var(--tinta-70)}
 
 details.avanzado{margin-top:22px;border-top:1px solid var(--linea);padding-top:14px}
-details.avanzado summary{cursor:pointer;font-size:15px;font-weight:600;color:var(--tinta-70);list-style:none}
+details.avanzado summary{cursor:pointer;font-size:.9375rem;font-weight:600;color:var(--tinta-70);list-style:none}
 details.avanzado summary::-webkit-details-marker{display:none}
-details.avanzado summary:before{content:"+ ";color:var(--tinta-45)}
+details.avanzado summary:before{content:"+ ";color:var(--tinta-70)}
 details.avanzado[open] summary:before{content:"– "}
 details.avanzado .campos{margin-top:18px}
 
 /* ---------- panel de resultado ---------- */
 .panel{position:sticky;top:22px}
 .slab{background:var(--tinta);color:#EDEFEA;padding:26px 24px 22px;border-radius:3px}
-.slab .etq{font-size:13.5px;color:#93A199;margin-bottom:2px}
-.slab .cifra{font-size:52px;line-height:1;font-weight:700;letter-spacing:-.035em;margin:6px 0 4px}
-@media(max-width:900px){.slab .cifra{font-size:44px}}
-.slab .pie{font-size:14.5px;color:#93A199;line-height:1.45}
+.slab .etq{font-size:.84375rem;color:#B9C4BC;margin-bottom:2px}
+.slab .cifra{font-size:3.25rem;line-height:1;font-weight:700;letter-spacing:-.035em;margin:6px 0 4px}
+@media(max-width:900px){.slab .cifra{font-size:2.75rem}}
+.slab .pie{font-size:.90625rem;color:#B9C4BC;line-height:1.45}
 .slab .aguinaldo{margin-top:14px;padding-top:13px;border-top:1px solid rgba(255,255,255,.16);
-  font-size:14.5px;color:#B9C4BC}
+  font-size:.90625rem;color:#B9C4BC}
 
 .desglose{margin-top:2px;background:rgba(255,255,255,.62);border-radius:0 0 3px 3px}
 .desglose .fila{display:flex;justify-content:space-between;gap:14px;padding:8px 14px;
-  border-bottom:1px solid var(--linea);font-size:14.5px}
+  border-bottom:1px solid var(--linea);font-size:.90625rem}
 .desglose .fila:last-child{border-bottom:0}
 .desglose .fila span:last-child{font-weight:600;white-space:nowrap}
 .desglose .fila.total{background:rgba(138,106,34,.10);font-weight:700}
 
 .escenarios{margin-top:20px}
-.escenarios h3{font-size:15.5px;margin:0 0 8px;font-weight:700}
-table.esc{width:100%;border-collapse:collapse;font-size:14.5px}
-table.esc th{text-align:left;font-size:12px;color:var(--tinta-45);font-weight:600;
+.escenarios h3{font-size:.96875rem;margin:0 0 8px;font-weight:700}
+table.esc{width:100%;border-collapse:collapse;font-size:1.0625rem}
+table.esc th{text-align:left;font-size:.875rem;color:var(--tinta-70);font-weight:600;
   padding:0 8px 6px 0;border-bottom:1px solid var(--linea)}
-table.esc td{padding:7px 8px 7px 0;border-bottom:1px solid var(--linea)}
+table.esc td{padding:11px 8px 11px 0;border-bottom:1px solid var(--linea)}
 table.esc td:last-child,table.esc th:last-child{text-align:right;padding-right:0}
 table.esc td.der,table.esc th.der{text-align:right}
 table.esc tr.yo td{font-weight:700;background:rgba(138,106,34,.09)}
+.tuplan{color:var(--brasa);font-size:.85em;white-space:nowrap}
 
 button.descargar{
-  width:100%;margin-top:22px;padding:16px;font:inherit;font-size:18px;font-weight:600;
+  width:100%;margin-top:22px;padding:16px;font:inherit;font-size:1.125rem;font-weight:600;
   background:var(--verde);color:#fff;border:0;border-radius:3px;cursor:pointer;transition:background .15s}
 button.descargar:hover{background:#23483a}
 button.descargar:disabled{background:var(--linea);color:var(--tinta-45);cursor:not-allowed}
 
 .nohace{margin-top:56px;border-top:2px solid var(--tinta);padding-top:22px}
-.nohace h2{font-size:21px;margin:0 0 14px;letter-spacing:-.01em}
+.nohace h2{font-size:1.3125rem;margin:0 0 14px;letter-spacing:-.01em}
 .nohace ul{list-style:none;margin:0;padding:0;max-width:75ch}
-.nohace li{position:relative;padding:0 0 13px 32px;font-size:16px;line-height:1.55}
+.nohace li{position:relative;padding:0 0 13px 32px;font-size:1rem;line-height:1.55}
 .nohace li:before{content:"✕";position:absolute;left:2px;top:0;color:var(--alerta);font-weight:700}
 footer.legal{margin-top:44px;padding-top:16px;border-top:1px solid var(--linea);
-  font-size:13.5px;color:var(--tinta-70);max-width:82ch;line-height:1.6}
+  font-size:.84375rem;color:var(--tinta-70);max-width:82ch;line-height:1.6}
 footer.legal a{color:var(--verde);font-weight:600}
+
+/* barra fija móvil con la pensión (solo ≤900px, cuando el panel quedó fuera de vista) */
+#barraMovil{display:none}
+@media(max-width:900px){
+  #barraMovil{position:fixed;left:0;right:0;bottom:0;z-index:50;display:flex;align-items:center;
+    justify-content:space-between;gap:14px;background:var(--tinta);border-radius:12px 12px 0 0;
+    box-shadow:0 -6px 22px rgba(20,33,28,.28);
+    padding:12px 18px;padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+  body.con-barra .wrap{padding-bottom:150px}
+}
+.bm-etq{display:block;font-size:.84375rem;color:#B9C4BC}
+.bm-cifra{display:block;font-size:1.75rem;color:#fff;font-weight:700;line-height:1.15}
+#bmVer{font:inherit;font-size:1rem;font-weight:700;background:var(--verde);color:#fff;border:0;
+  border-radius:6px;padding:13px 16px;cursor:pointer;white-space:nowrap;flex:none}
+
+.sr-solo{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);
+  clip-path:inset(50%);white-space:nowrap}
 .oculto{display:none!important}
 </style>
 
@@ -176,7 +198,7 @@ footer.legal a{color:var(--verde);font-weight:600}
 <div>
 
   <section class="paso">
-    <div class="paso-tit"><b>Antes de empezar</b></div>
+    <div class="paso-tit"><h2>Antes de empezar</h2></div>
     <p class="paso-sub">Para que la aproximación salga lo más cercana posible, necesitas tres cosas:</p>
     <ul class="previo">
       <li>Tu <b>constancia de semanas cotizadas</b> en PDF. Se descarga gratis en el
@@ -190,18 +212,18 @@ footer.legal a{color:var(--verde);font-weight:600}
   </section>
 
   <section class="paso">
-    <div class="paso-tit"><i>Paso 1</i><b>Tu constancia</b></div>
+    <div class="paso-tit"><i>Paso 1</i><h2>Tu constancia</h2></div>
 
     <div id="drop">
       <button type="button" class="btn-elegir">Elegir mi constancia (PDF)</button>
       <div class="small">Si estás en computadora, también puedes arrastrar el archivo hasta aquí</div>
     </div>
     <input type="file" id="file" accept="application/pdf" class="oculto">
-    <div id="msg"></div>
+    <div id="msg" aria-live="polite"></div>
   </section>
 
   <section class="paso oculto" id="secDatos">
-    <div class="paso-tit"><i>Paso 2</i><b>Lo que dice tu constancia</b></div>
+    <div class="paso-tit"><i>Paso 2</i><h2>Lo que dice tu constancia</h2></div>
     <p class="paso-sub">Compara estos datos contra tu constancia. Si las semanas o el salario no coinciden,
        corrígelos aquí mismo: de esto depende que la aproximación sea buena.</p>
     <div class="campos">
@@ -229,7 +251,7 @@ footer.legal a{color:var(--verde);font-weight:600}
   </section>
 
   <section class="paso oculto" id="secPlan">
-    <div class="paso-tit"><i>Paso 3</i><b>Tu plan de retiro</b></div>
+    <div class="paso-tit"><i>Paso 3</i><h2>Tu plan de retiro</h2></div>
     <p class="paso-sub">Estos son los supuestos que puedes mover. El resultado se recalcula al instante.</p>
     <div class="campos">
       <div class="campo">
@@ -285,8 +307,11 @@ footer.legal a{color:var(--verde);font-weight:600}
         </select>
       </div>
       <div class="campo check">
-        <input type="checkbox" id="conyuge" checked>
-        <label for="conyuge">Tengo esposa o concubina (suma 15%)</label>
+        <label class="check-card" for="conyuge">
+          <input type="checkbox" id="conyuge" checked>
+          <span class="check-txt"><b>Tengo esposa(o) o concubina(o)</b>
+            <span>Suma 15% a la pensión</span></span>
+        </label>
       </div>
     </div>
 
@@ -313,7 +338,8 @@ footer.legal a{color:var(--verde);font-weight:600}
 
 <!-- ================= PANEL DERECHO ================= -->
 <div class="panel oculto" id="panel">
-  <div class="slab">
+  <h2 class="sr-solo">Tu resultado</h2>
+  <div class="slab" role="status">
     <div class="etq">Pensión mensual estimada</div>
     <div class="cifra num" id="cifra">$0</div>
     <div class="pie" id="cifraPie">&mdash;</div>
@@ -343,6 +369,11 @@ footer.legal a{color:var(--verde);font-weight:600}
 
 </div>
 
+<div id="barraMovil" class="oculto">
+  <div><span class="bm-etq">Pensión mensual estimada</span><b class="bm-cifra num" id="bmCifra">$0</b></div>
+  <button type="button" id="bmVer">Ver detalle</button>
+</div>
+
 <section class="nohace">
   <h2>Lo que esta página no hace</h2>
   <ul>
@@ -362,7 +393,7 @@ footer.legal a{color:var(--verde);font-weight:600}
   artículo 164. Los salarios futuros y las UMA de años siguientes son proyecciones. La herramienta no
   contempla periodos con dos patrones simultáneos ni semanas descontadas por retiros parciales.
   Esto no constituye asesoría previsional; valida tu caso con un especialista antes de renunciar.
-  <br><br>Versión de la página: v1.2.7 &middot; Hecha con 🧡 por
+  <br><br>Versión de la página: v1.3.0 &middot; Hecha con 🧡 por
   <a href="https://github.com/iam-oov" target="_blank" rel="noopener">Osvaldo Hinojosa</a>
 </footer>
 </div>
@@ -654,6 +685,8 @@ function render(){
   if(!R) return;
 
   $('cifra').textContent = pesos(R.final);
+  $('bmCifra').textContent = pesos(R.final);
+  actualizarBarra();
   const partes = [];
   if(R.conyuge) partes.push('esposa');
   if(R.hijos)   partes.push(R.hijos===1 ? '1 hijo estudiando' : R.hijos+' hijos estudiando');
@@ -685,6 +718,7 @@ function render(){
     if(!r) return '';
     return '<tr class="'+(a===R.anios?'yo':'')+'"><td>'+
       (a===0 ? 'Sin Modalidad 40' : a+(a===1?' año':' años')) +
+      (a===R.anios ? ' <span class="tuplan">&larr; tu plan</span>' : '') +
       '</td><td class="num">'+r.edad+'</td><td class="num">'+pesos(r.final)+'</td></tr>';
   }).join('');
 
@@ -770,6 +804,17 @@ async function procesar(file){
     $('drop').classList.remove('busy');
   }
 }
+
+/* ---- barra fija móvil: aparece mientras la tarjeta de la pensión no se vea bien ---- */
+let panelEnVista = true;
+new IntersectionObserver(es=>{ panelEnVista = es[0].intersectionRatio >= .5; actualizarBarra(); },
+  {threshold:[0,.5,1]}).observe(document.querySelector('.slab'));
+function actualizarBarra(){
+  const activa = !$('panel').classList.contains('oculto') && !panelEnVista;
+  $('barraMovil').classList.toggle('oculto', !activa);
+  document.body.classList.toggle('con-barra', activa);
+}
+$('bmVer').onclick = ()=> $('panel').scrollIntoView({behavior:'smooth', block:'start'});
 
 $('drop').onclick = ()=> $('file').click();
 $('file').onchange = e => procesar(e.target.files[0]);
