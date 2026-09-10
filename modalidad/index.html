@@ -393,7 +393,7 @@ footer.legal a{color:var(--verde);font-weight:600}
   artículo 164. Los salarios futuros y las UMA de años siguientes son proyecciones. La herramienta no
   contempla periodos con dos patrones simultáneos ni semanas descontadas por retiros parciales.
   Esto no constituye asesoría previsional; valida tu caso con un especialista antes de renunciar.
-  <br><br>Versión de la página: v1.3.0 &middot; Hecha con 🧡 por
+  <br><br>Versión de la página: v1.3.1 &middot; Hecha con 🧡 por
   <a href="https://github.com/iam-oov" target="_blank" rel="noopener">Osvaldo Hinojosa</a>
 </footer>
 </div>
@@ -753,6 +753,22 @@ function aviso(txt, clase){
 
 async function procesar(file){
   if(!file) return;
+
+  // validación previa: todo es local, esto solo protege el navegador del usuario
+  if(file.size > 10*1024*1024){
+    aviso('<b>El archivo es demasiado grande.</b> La constancia del IMSS pesa menos de 1 MB; '+
+          'revisa que hayas elegido el PDF correcto.', 'err');
+    $('file').value = '';
+    return;
+  }
+  const cab = new Uint8Array(await file.slice(0,4).arrayBuffer());
+  if(!(cab[0]===0x25 && cab[1]===0x50 && cab[2]===0x44 && cab[3]===0x46)){ // "%PDF"
+    aviso('<b>Ese archivo no es un PDF.</b> Sube la constancia original que descargaste '+
+          'del portal del IMSS, sin convertirla ni escanearla.', 'err');
+    $('file').value = '';
+    return;
+  }
+
   $('drop').classList.add('busy');
   aviso('<b>Leyendo la constancia…</b>');
   try{
@@ -802,6 +818,7 @@ async function procesar(file){
     aviso('<b>No pude leer el documento.</b> '+e.message, 'err');
   }finally{
     $('drop').classList.remove('busy');
+    $('file').value = '';   // permite volver a elegir el mismo archivo
   }
 }
 
