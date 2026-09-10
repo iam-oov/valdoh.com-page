@@ -1,0 +1,852 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calculadora de pensión IMSS Ley 73</title>
+<meta name="description" content="Sube tu constancia de semanas cotizadas del IMSS y calcula tu pensión de Ley 73 con y sin Modalidad 40. Se procesa en tu navegador, sin enviar datos a ningún servidor.">
+<meta name="theme-color" content="#14211C">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Calculadora de pensión IMSS Ley 73">
+<meta property="og:description" content="Calcula tu pensión con el artículo 167 y compara escenarios de Modalidad 40. Tus datos no salen de tu navegador.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='4' fill='%2314211C'/><text x='16' y='23' font-family='Helvetica,Arial' font-size='19' font-weight='bold' fill='%23F1F2EE' text-anchor='middle'>73</text></svg>">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+<style>
+:root{
+  --papel:#F1F2EE;
+  --papel-2:#E7E9E3;
+  --tinta:#14211C;
+  --tinta-70:#4A5852;
+  --tinta-45:#7C8880;
+  --linea:#C8CDC6;
+  --brasa:#8A6A22;
+  --alerta:#8C3A22;
+  --verde:#2C5C48;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--papel);
+  color:var(--tinta);
+  font-family:"Segoe UI",-apple-system,BlinkMacSystemFont,Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-size:14px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+.num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+
+/* ---------- estructura ---------- */
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px 80px}
+header.top{padding:44px 0 26px;border-bottom:2px solid var(--tinta)}
+h1{font-size:31px;line-height:1.12;font-weight:700;letter-spacing:-.02em;margin:0 0 8px}
+header.top p{margin:0;max-width:60ch;color:var(--tinta-70);font-size:14.5px}
+.grid{display:grid;grid-template-columns:1fr 400px;gap:52px;align-items:start;margin-top:34px}
+@media(max-width:900px){
+  .grid{grid-template-columns:1fr;gap:34px}
+  .wrap{padding:0 18px 60px}
+  h1{font-size:25px}
+}
+
+/* ---------- pasos ---------- */
+.paso{margin-bottom:38px}
+.paso-tit{display:flex;align-items:baseline;gap:11px;margin:0 0 4px}
+.paso-tit b{font-size:17px;font-weight:700;letter-spacing:-.01em}
+.paso-tit i{font-style:normal;font-size:12px;color:var(--tinta-45);font-variant-numeric:tabular-nums}
+.paso-sub{margin:0 0 16px;color:var(--tinta-70);font-size:13.5px;max-width:62ch}
+
+/* ---------- zona de carga ---------- */
+#drop{
+  border:1.5px dashed var(--linea);border-radius:3px;background:rgba(255,255,255,.5);
+  padding:34px 22px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;
+}
+#drop:hover,#drop.over{border-color:var(--verde);background:rgba(255,255,255,.9)}
+#drop.over{border-style:solid}
+#drop .big{font-size:15px;font-weight:600;margin-bottom:5px}
+#drop .small{font-size:12.5px;color:var(--tinta-45)}
+#drop.busy{pointer-events:none;opacity:.6}
+
+.aviso{margin-top:12px;padding:11px 14px;border-left:3px solid var(--brasa);
+  background:rgba(255,255,255,.7);font-size:13px;border-radius:0 2px 2px 0}
+.aviso.err{border-color:var(--alerta)}
+.aviso.ok{border-color:var(--verde)}
+.aviso b{display:block;margin-bottom:2px}
+
+/* ---------- formulario ---------- */
+.campos{display:grid;grid-template-columns:1fr 1fr;gap:20px 26px}
+@media(max-width:560px){.campos{grid-template-columns:1fr}}
+.campo{display:flex;flex-direction:column}
+.campo.ancho{grid-column:1/-1}
+label{font-size:12.5px;font-weight:600;color:var(--tinta-70);margin-bottom:5px}
+label .hint{font-weight:400;color:var(--tinta-45)}
+input[type=text],input[type=date],input[type=number],select{
+  font:inherit;font-size:15px;color:var(--tinta);background:transparent;
+  border:0;border-bottom:1.5px solid var(--linea);padding:7px 2px;border-radius:0;
+  width:100%;transition:border-color .15s;
+}
+input:focus,select:focus{outline:0;border-bottom-color:var(--verde)}
+select{cursor:pointer;-webkit-appearance:none;appearance:none;
+  background-image:linear-gradient(45deg,transparent 50%,var(--tinta-45) 50%),linear-gradient(135deg,var(--tinta-45) 50%,transparent 50%);
+  background-position:calc(100% - 11px) 55%,calc(100% - 6px) 55%;
+  background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:24px}
+.check{display:flex;align-items:center;gap:9px;padding-top:20px}
+.check input{width:17px;height:17px;accent-color:var(--verde);margin:0}
+.check label{margin:0;font-size:14px;color:var(--tinta);font-weight:500}
+
+details.avanzado{margin-top:22px;border-top:1px solid var(--linea);padding-top:14px}
+details.avanzado summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--tinta-70);list-style:none}
+details.avanzado summary::-webkit-details-marker{display:none}
+details.avanzado summary:before{content:"+ ";color:var(--tinta-45)}
+details.avanzado[open] summary:before{content:"– "}
+details.avanzado .campos{margin-top:18px}
+
+/* ---------- panel de resultado ---------- */
+.panel{position:sticky;top:22px}
+.slab{background:var(--tinta);color:#EDEFEA;padding:26px 24px 22px;border-radius:3px}
+.slab .etq{font-size:11.5px;color:#93A199;margin-bottom:2px}
+.slab .cifra{font-size:52px;line-height:1;font-weight:700;letter-spacing:-.035em;margin:6px 0 4px}
+@media(max-width:900px){.slab .cifra{font-size:44px}}
+.slab .pie{font-size:12.5px;color:#93A199;line-height:1.45}
+.slab .aguinaldo{margin-top:14px;padding-top:13px;border-top:1px solid rgba(255,255,255,.16);
+  font-size:12.5px;color:#B9C4BC}
+
+.desglose{margin-top:2px;background:rgba(255,255,255,.62);border-radius:0 0 3px 3px}
+.desglose .fila{display:flex;justify-content:space-between;gap:14px;padding:8px 14px;
+  border-bottom:1px solid var(--linea);font-size:12.8px}
+.desglose .fila:last-child{border-bottom:0}
+.desglose .fila span:last-child{font-weight:600;white-space:nowrap}
+.desglose .fila.total{background:rgba(138,106,34,.10);font-weight:700}
+
+.escenarios{margin-top:20px}
+.escenarios h3{font-size:13px;margin:0 0 8px;font-weight:700}
+table.esc{width:100%;border-collapse:collapse;font-size:12.5px}
+table.esc th{text-align:left;font-size:11px;color:var(--tinta-45);font-weight:600;
+  padding:0 8px 6px 0;border-bottom:1px solid var(--linea)}
+table.esc td{padding:7px 8px 7px 0;border-bottom:1px solid var(--linea)}
+table.esc td:last-child,table.esc th:last-child{text-align:right;padding-right:0}
+table.esc tr.yo td{font-weight:700;background:rgba(138,106,34,.09)}
+
+button.descargar{
+  width:100%;margin-top:22px;padding:14px;font:inherit;font-size:15px;font-weight:600;
+  background:var(--verde);color:#fff;border:0;border-radius:3px;cursor:pointer;transition:background .15s}
+button.descargar:hover{background:#23483a}
+button.descargar:disabled{background:var(--linea);color:var(--tinta-45);cursor:not-allowed}
+
+footer.legal{margin-top:52px;padding-top:16px;border-top:1px solid var(--linea);
+  font-size:11.5px;color:var(--tinta-45);max-width:82ch;line-height:1.6}
+.oculto{display:none!important}
+</style>
+
+<div class="wrap">
+
+<header class="top">
+  <h1>Calculadora de pensión IMSS Ley&nbsp;73</h1>
+  <p>Sube tu constancia de semanas cotizadas, ajusta el plan de retiro y descarga un reporte de una hoja
+     con el cálculo del artículo 167 y la comparación de escenarios de Modalidad&nbsp;40.
+     El archivo se procesa en tu navegador; no se envía a ningún servidor.</p>
+</header>
+
+<div class="grid">
+
+<!-- ================= COLUMNA IZQUIERDA ================= -->
+<div>
+
+  <section class="paso">
+    <div class="paso-tit"><b>Tu constancia</b><i>Paso 1</i></div>
+    <p class="paso-sub">Descárgala en el portal del IMSS con tu CURP y NSS. Debe ser el PDF original,
+       el que incluye el historial de salarios por patrón.</p>
+
+    <div id="drop">
+      <div class="big">Arrastra el PDF aquí o haz clic para elegirlo</div>
+      <div class="small">Constancia de Semanas Cotizadas &mdash; formato oficial del IMSS</div>
+    </div>
+    <input type="file" id="file" accept="application/pdf" class="oculto">
+    <div id="msg"></div>
+  </section>
+
+  <section class="paso oculto" id="secDatos">
+    <div class="paso-tit"><b>Lo que dice tu constancia</b><i>Paso 2</i></div>
+    <p class="paso-sub">Revisa que todo esté bien. Puedes corregir cualquier campo si la lectura falló.</p>
+    <div class="campos">
+      <div class="campo ancho">
+        <label for="nombre">Nombre</label>
+        <input type="text" id="nombre" placeholder="Nombre del asegurado">
+      </div>
+      <div class="campo">
+        <label for="nacimiento">Fecha de nacimiento</label>
+        <input type="date" id="nacimiento">
+      </div>
+      <div class="campo">
+        <label for="semanas">Semanas cotizadas</label>
+        <input type="number" id="semanas" min="0" step="1">
+      </div>
+      <div class="campo">
+        <label for="fcorte">Fecha de la constancia</label>
+        <input type="date" id="fcorte">
+      </div>
+      <div class="campo">
+        <label for="sbcActual">SBC diario actual <span class="hint">pesos</span></label>
+        <input type="number" id="sbcActual" min="0" step="0.01">
+      </div>
+    </div>
+  </section>
+
+  <section class="paso oculto" id="secPlan">
+    <div class="paso-tit"><b>Tu plan de retiro</b><i>Paso 3</i></div>
+    <p class="paso-sub">Estos son los supuestos que puedes mover. El resultado se recalcula al instante.</p>
+    <div class="campos">
+      <div class="campo">
+        <label for="fbaja">Fecha de baja del trabajo</label>
+        <input type="date" id="fbaja">
+      </div>
+      <div class="campo">
+        <label for="aniosM40">Años en Modalidad 40</label>
+        <select id="aniosM40">
+          <option value="0">No voy a usar Modalidad 40</option>
+          <option value="1">1 año</option>
+          <option value="2">2 años</option>
+          <option value="3">3 años</option>
+          <option value="4">4 años</option>
+          <option value="5" selected>5 años</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label for="tipoSBC">Salario con el que cotizarías</label>
+        <select id="tipoSBC">
+          <option value="tope" selected>Al tope de 25 UMA</option>
+          <option value="mismo">El mismo que tengo hoy</option>
+          <option value="otro">Otro monto</option>
+        </select>
+      </div>
+      <div class="campo oculto" id="campoSBCotro">
+        <label for="sbcM40">SBC diario en Modalidad 40 <span class="hint">pesos</span></label>
+        <input type="number" id="sbcM40" min="0" step="0.01">
+      </div>
+      <div class="campo">
+        <label for="edadPension">Edad a la que pediría la pensión</label>
+        <select id="edadPension">
+          <option value="60">60 años &mdash; 75%</option>
+          <option value="61">61 años &mdash; 80%</option>
+          <option value="62">62 años &mdash; 85%</option>
+          <option value="63">63 años &mdash; 90%</option>
+          <option value="64">64 años &mdash; 95%</option>
+          <option value="65">65 años &mdash; 100%</option>
+        </select>
+      </div>
+      <div class="campo">
+        <label for="hijos">Hijos que acreditan estudios <span class="hint">16 a 25 años</span></label>
+        <select id="hijos">
+          <option value="0">Ninguno</option>
+          <option value="1">1 hijo</option>
+          <option value="2">2 hijos</option>
+          <option value="3">3 hijos</option>
+          <option value="4">4 hijos</option>
+        </select>
+      </div>
+      <div class="campo check">
+        <input type="checkbox" id="conyuge" checked>
+        <label for="conyuge">Tengo esposa o concubina (suma 15%)</label>
+      </div>
+    </div>
+
+    <details class="avanzado">
+      <summary>Supuestos económicos</summary>
+      <div class="campos">
+        <div class="campo">
+          <label for="uma">UMA diaria vigente <span class="hint">pesos</span></label>
+          <input type="number" id="uma" value="117.31" step="0.01" min="1">
+        </div>
+        <div class="campo">
+          <label for="umaCrec">Crecimiento anual de la UMA <span class="hint">%</span></label>
+          <input type="number" id="umaCrec" value="4" step="0.1">
+        </div>
+        <div class="campo">
+          <label for="inflSal">Crecimiento anual de tu salario <span class="hint">%</span></label>
+          <input type="number" id="inflSal" value="8" step="0.1">
+        </div>
+      </div>
+    </details>
+  </section>
+
+</div>
+
+<!-- ================= PANEL DERECHO ================= -->
+<div class="panel oculto" id="panel">
+  <div class="slab">
+    <div class="etq">Pensión mensual estimada</div>
+    <div class="cifra num" id="cifra">$0</div>
+    <div class="pie" id="cifraPie">&mdash;</div>
+    <div class="aguinaldo" id="aguinaldo">&mdash;</div>
+  </div>
+
+  <div class="desglose" id="desglose"></div>
+
+  <div class="escenarios">
+    <h3>Si cambias los años de Modalidad 40</h3>
+    <table class="esc">
+      <thead><tr><th>Estrategia</th><th>Edad</th><th>Pensión</th></tr></thead>
+      <tbody id="tbEsc"></tbody>
+    </table>
+  </div>
+
+  <button class="descargar" id="btnPDF">Descargar reporte de una hoja</button>
+</div>
+
+</div>
+
+<footer class="legal">
+  Cifras de planeación, no montos garantizados por el IMSS. El cálculo aplica el artículo 167 de la Ley
+  del Seguro Social de 1973: promedio nominal del salario base de cotización de las últimas 250 semanas,
+  cuantía básica e incrementos por antigüedad, factor de edad por cesantía y asignaciones familiares del
+  artículo 164. Los salarios futuros y las UMA de años siguientes son proyecciones. La herramienta no
+  contempla periodos con dos patrones simultáneos ni semanas descontadas por retiros parciales.
+  Esto no constituye asesoría previsional; valida tu caso con un especialista antes de renunciar.
+</footer>
+</div>
+
+<script>
+/* ============================================================
+   1. Constantes normativas
+   ============================================================ */
+const DIAS_MES = 30.4;
+
+const TABLA_167 = [
+  [1.00,1.25,.8000,.00563],[1.26,1.50,.7711,.00814],[1.51,1.75,.5818,.01178],
+  [1.76,2.00,.4923,.01430],[2.01,2.25,.4267,.01615],[2.26,2.50,.3765,.01756],
+  [2.51,2.75,.3368,.01868],[2.76,3.00,.3048,.01958],[3.01,3.25,.2783,.02033],
+  [3.26,3.50,.2560,.02096],[3.51,3.75,.2370,.02149],[3.76,4.00,.2207,.02195],
+  [4.01,4.25,.2065,.02235],[4.26,4.50,.1939,.02271],[4.51,4.75,.1829,.02302],
+  [4.76,5.00,.1730,.02330],[5.01,5.25,.1641,.02355],[5.26,5.50,.1561,.02377],
+  [5.51,5.75,.1488,.02398],[5.76,6.00,.1422,.02416],[6.01,1e9,.1362,.02433]
+];
+const FACTOR_EDAD = {60:.75,61:.80,62:.85,63:.90,64:.95,65:1.00};
+const CUOTA_M40   = {2025:.13347,2026:.14438,2027:.15528,2028:.16619,2029:.17709};
+const cuotaM40 = a => a<=2024 ? .12256 : (CUOTA_M40[a] || .18800);
+
+const MESES_ES = {enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,
+                  agosto:8,septiembre:9,octubre:10,noviembre:11,diciembre:12};
+
+/* ============================================================
+   2. Utilidades
+   ============================================================ */
+const $ = id => document.getElementById(id);
+const dmy  = s => { const [d,m,a] = s.split('/').map(Number); return new Date(a,m-1,d); };
+const iso  = d => d.toISOString().slice(0,10);
+const dISO = s => { const [a,m,d] = s.split('-').map(Number); return new Date(a,m-1,d); };
+const dias = (a,b) => Math.round((b-a)/86400000);
+const addA = (d,n) => new Date(d.getFullYear()+n, d.getMonth(), d.getDate());
+const pesos = n => '$'+Math.round(n).toLocaleString('es-MX');
+const pesos2 = n => '$'+n.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+function edadEn(nac, f){
+  let e = f.getFullYear()-nac.getFullYear();
+  const m = f.getMonth()-nac.getMonth();
+  if(m<0 || (m===0 && f.getDate()<nac.getDate())) e--;
+  return e;
+}
+function fechaCumple(nac, edad){ return new Date(nac.getFullYear()+edad, nac.getMonth(), nac.getDate()); }
+function fechaLarga(d){
+  const M=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  return d.getDate()+' de '+M[d.getMonth()]+' de '+d.getFullYear();
+}
+
+/* ============================================================
+   3. Lectura de la constancia
+   ============================================================ */
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+async function leerConstancia(file){
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({data:buf}).promise;
+  const lineas = [];
+
+  for(let p=1; p<=pdf.numPages; p++){
+    const page = await pdf.getPage(p);
+    const tc = await page.getTextContent();
+    const filas = new Map();
+    tc.items.forEach(it=>{
+      if(!it.str.trim()) return;
+      const y = Math.round(it.transform[5]);
+      const k = [...filas.keys()].find(v => Math.abs(v-y) <= 2);
+      const key = k===undefined ? y : k;
+      if(!filas.has(key)) filas.set(key,[]);
+      filas.get(key).push({x:it.transform[4], s:it.str});
+    });
+    [...filas.entries()].sort((a,b)=>b[0]-a[0]).forEach(([,arr])=>{
+      lineas.push(arr.sort((a,b)=>a.x-b.x).map(o=>o.s).join(' ').replace(/\s+/g,' ').trim());
+    });
+  }
+
+  const texto = lineas.join('\n');
+  const out = {movimientos:[], altas:[]};
+
+  // --- identidad, tomada de la cadena original cuando existe ---
+  const nom = texto.match(/Apellido Paterno:([^|]*)\|Apellido Materno:([^|]*)\|Nombre del Asegurado:([^|]*)\|/i);
+  if(nom) out.nombre = (nom[3]+' '+nom[1]+' '+nom[2]).replace(/\s+/g,' ').trim();
+  else {
+    const m = texto.match(/Estimado\(a\),?\s*\n?\s*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ ]{6,})/);
+    if(m) out.nombre = m[1].trim();
+  }
+
+  const curp = texto.match(/CURP:\s*([A-Z]{4}\d{6}[A-Z]{6}[A-Z0-9]{2})/i);
+  if(curp){
+    const c = curp[1].toUpperCase();
+    out.curp = c;
+    const yy = +c.slice(4,6), mm = +c.slice(6,8), dd = +c.slice(8,10);
+    const siglo = /\d/.test(c[16]) ? 1900 : 2000;
+    out.nacimiento = new Date(siglo+yy, mm-1, dd);
+  }
+  const nss = texto.match(/NSS:\s*(\d{9,11})/);
+  if(nss) out.nss = nss[1];
+
+  // --- semanas ---
+  let sem = texto.match(/semanas cotizadas:\s*(\d{2,5})/i);
+  if(!sem){
+    const i = lineas.findIndex(l=>/Total de semanas cotizadas/i.test(l));
+    if(i>=0) for(let j=i+1;j<Math.min(i+6,lineas.length);j++){
+      const m = lineas[j].match(/^(\d{2,5})$/); if(m){ sem=[null,m[1]]; break; }
+    }
+  }
+  if(sem) out.semanas = +sem[1];
+
+  // --- fecha de emisión ---
+  let fe = texto.match(/Fecha:\s*(\d{1,2}) de ([a-zñáéíóú]+)\s+(\d{4})/i);
+  if(fe && MESES_ES[fe[2].toLowerCase()]) out.corte = new Date(+fe[3], MESES_ES[fe[2].toLowerCase()]-1, +fe[1]);
+  else {
+    const m = texto.match(/(\d{2})\s*\/\s*(\d{2})\s*\/\s*(\d{4})\s*DD/);
+    if(m) out.corte = new Date(+m[3], +m[2]-1, +m[1]);
+  }
+
+  // --- movimientos de salario y bloques de patrón ---
+  const reMov = /(MODIFICACION DE SALARIO|REINGRESO|BAJA|ALTA)\s+(\d{2}\/\d{2}\/\d{4})\s+\$?\s*([\d,]+(?:\.\d+)?)/i;
+  const reAlta = /Fecha de alta\s+(\d{2}\/\d{2}\/\d{4})\s+Fecha de baja\s+(Vigente|\d{2}\/\d{2}\/\d{4})/i;
+
+  lineas.forEach(l=>{
+    const m = l.match(reMov);
+    if(m){
+      out.movimientos.push({
+        fecha: dmy(m[2]),
+        tipo: m[1].toUpperCase().startsWith('BAJA') ? 'BAJA' : 'ALTA_MOD',
+        sbc: parseFloat(m[3].replace(/,/g,''))
+      });
+    }
+    const a = l.match(reAlta);
+    if(a) out.altas.push({alta: dmy(a[1]), vigente: /vigente/i.test(a[2])});
+  });
+
+  out.movimientos.sort((x,y)=>x.fecha-y.fecha);
+  if(out.altas.length) out.primeraAlta = out.altas.map(a=>a.alta).sort((x,y)=>x-y)[0];
+  if(out.movimientos.length) out.sbcActual = out.movimientos[out.movimientos.length-1].sbc;
+
+  return out;
+}
+
+/* ============================================================
+   4. Motor de cálculo
+   ============================================================ */
+let D = null;   // datos de la constancia
+
+// SBC vigente en una fecha, usando el historial + proyección + Modalidad 40
+function construirLinea(p){
+  const evs = (D.movimientos||[]).slice();
+  const ultimo = evs.length ? evs[evs.length-1] : null;
+
+  // proyección del salario desde el último movimiento hasta la baja
+  if(ultimo && p.baja > ultimo.fecha){
+    const g = Math.pow(1 + p.inflSal/100, 1/6);   // bimestral
+    let f = new Date(ultimo.fecha), s = ultimo.sbc;
+    while(true){
+      f = new Date(f.getFullYear(), f.getMonth()+2, f.getDate());
+      if(f >= p.baja) break;
+      s = s*g;
+      evs.push({fecha:new Date(f), tipo:'ALTA_MOD', sbc:s, proyectado:true});
+    }
+  }
+  evs.sort((a,b)=>a.fecha-b.fecha);
+  return evs;
+}
+
+function sbcEn(evs, d, p){
+  if(d >= p.baja){
+    return (p.anios>0 && d < p.finM40) ? p.sbcM40 : null;
+  }
+  let v = null;
+  for(const e of evs){
+    if(e.fecha <= d) v = e;
+    else break;
+  }
+  if(!v) return null;
+  if(v.tipo === 'BAJA' && +v.fecha !== +d) return null;
+  return v.sbc;
+}
+
+function promedio250(p){
+  const evs = construirLinea(p);
+  const fin = p.anios>0 ? p.finM40 : p.baja;
+  let d = new Date(fin); d.setDate(d.getDate()-1);
+  let suma = 0, n = 0, guarda = 0;
+  while(n < 1750 && guarda < 20000){
+    guarda++;
+    const s = sbcEn(evs, d, p);
+    if(s !== null){ suma += s; n++; }
+    d.setDate(d.getDate()-1);
+  }
+  return n ? suma/n : 0;
+}
+
+function grupo167(vecesUMA){
+  for(const [lo,hi,cb,inc] of TABLA_167) if(vecesUMA>=lo && vecesUMA<=hi) return {cb,inc};
+  const t = TABLA_167[TABLA_167.length-1]; return {cb:t[2], inc:t[3]};
+}
+function incrementos(sem){
+  const exc = sem - 500;
+  if(exc <= 0) return 0;
+  const comp = Math.floor(exc/52), resto = exc%52;
+  return comp + (resto>26 ? 1 : (resto>=13 ? .5 : 0));
+}
+
+function calcular(over){
+  const p = leerFormulario(over);
+  if(!p) return null;
+
+  const prom = promedio250(p);
+  const semNuevas = Math.max(0, Math.round(dias(p.corte, p.baja)/7));
+  const semM40 = p.anios>0 ? Math.round(dias(p.baja, p.finM40)/7) : 0;
+  const semanas = p.semanas + semNuevas + semM40;
+
+  const anosAdelante = Math.max(0, p.fechaPension.getFullYear() - new Date().getFullYear());
+  const umaPension = p.uma * Math.pow(1 + p.umaCrec/100, anosAdelante);
+  const veces = prom / umaPension;
+  const {cb, inc} = grupo167(veces);
+  const nInc = incrementos(semanas);
+  const pct = cb + nInc*inc;
+
+  const bruta = prom * DIAS_MES * pct;
+  const conEdad = bruta * FACTOR_EDAD[p.edad];
+  const asign = (p.conyuge ? .15 : 0) + p.hijos*.10;
+  const final = conEdad * (1 + asign);
+  const soloConyuge = conEdad * (1 + (p.conyuge ? .15 : 0));
+
+  // costo de la Modalidad 40
+  let costo = 0, f = new Date(p.baja);
+  for(let i=0;i<p.anios*12;i++){
+    costo += p.sbcM40 * DIAS_MES * cuotaM40(f.getFullYear());
+    f = new Date(f.getFullYear(), f.getMonth()+1, 1);
+  }
+
+  return {...p, prom, semanas, semM40, umaPension, veces, cb, inc, nInc, pct,
+          bruta, conEdad, asign, final, soloConyuge, costo};
+}
+
+function leerFormulario(over){
+  if(!D || !D.nacimiento) return null;
+  const baja = dISO($('fbaja').value || iso(new Date()));
+  const anios = over && over.anios!==undefined ? over.anios : +$('aniosM40').value;
+  const finM40 = addA(baja, anios);
+  const uma = +$('uma').value || 117.31;
+  const umaTope = uma*25;
+
+  const t = $('tipoSBC').value;
+  let sbcM40 = umaTope;
+  if(t==='mismo') sbcM40 = +$('sbcActual').value || umaTope;
+  if(t==='otro')  sbcM40 = +$('sbcM40').value || umaTope;
+  sbcM40 = Math.min(sbcM40, umaTope);
+
+  const nac = dISO($('nacimiento').value);
+  let edad = over && over.edad!==undefined ? over.edad : +$('edadPension').value;
+  // no puedes pensionarte antes de terminar la Modalidad 40
+  const edadFin = edadEn(nac, finM40);
+  edad = Math.min(65, Math.max(edad, Math.max(60, edadFin)));
+  const fechaPension = fechaCumple(nac, edad);
+
+  return {
+    nombre: $('nombre').value, nacimiento: nac,
+    semanas: +$('semanas').value || 0,
+    corte: dISO($('fcorte').value),
+    sbcActual: +$('sbcActual').value || 0,
+    baja, anios, finM40, sbcM40, umaTope, uma,
+    umaCrec: +$('umaCrec').value, inflSal: +$('inflSal').value,
+    edad, fechaPension,
+    conyuge: $('conyuge').checked, hijos: +$('hijos').value
+  };
+}
+
+/* ============================================================
+   5. Interfaz
+   ============================================================ */
+let R = null;
+
+function render(){
+  R = calcular();
+  if(!R) return;
+
+  $('cifra').textContent = pesos(R.final);
+  const partes = [];
+  if(R.conyuge) partes.push('esposa');
+  if(R.hijos)   partes.push(R.hijos===1 ? '1 hijo estudiando' : R.hijos+' hijos estudiando');
+  $('cifraPie').innerHTML =
+    (R.anios ? R.anios+(R.anios===1?' año':' años')+' de Modalidad 40' : 'Sin Modalidad 40') +
+    ' &middot; pensión a los ' + R.edad + ' años' +
+    (partes.length ? ' &middot; con ' + partes.join(' y ') : ' &middot; sin asignaciones');
+  $('aguinaldo').innerHTML =
+    'Más un aguinaldo anual de ' + pesos(R.final) + '. Ingreso del primer año: <b>' +
+    pesos(R.final*13) + '</b>.';
+
+  const f = [
+    ['Promedio de las últimas 250 semanas', pesos2(R.prom)+' diarios'],
+    ['Semanas al pensionarte', R.semanas.toLocaleString('es-MX')],
+    ['Grupo del artículo 167', R.veces.toFixed(2)+' UMA'],
+    ['Cuantía básica más '+R.nInc+' incrementos', (R.pct*100).toFixed(2)+'%'],
+    ['Pensión antes del factor de edad', pesos(R.bruta)],
+    ['Factor de edad a los '+R.edad+' años', (FACTOR_EDAD[R.edad]*100)+'%'],
+  ];
+  if(R.asign>0) f.push(['Asignaciones familiares', '+'+Math.round(R.asign*100)+'%']);
+  f.push(['Pensión mensual', pesos(R.final)]);
+  $('desglose').innerHTML = f.map((r,i)=>
+    '<div class="fila'+(i===f.length-1?' total':'')+'"><span>'+r[0]+'</span><span class="num">'+r[1]+'</span></div>'
+  ).join('');
+
+  const opciones = [...new Set([0,1,3,5,R.anios])].sort((a,b)=>a-b);
+  $('tbEsc').innerHTML = opciones.map(a=>{
+    const r = calcular({anios:a});
+    if(!r) return '';
+    return '<tr class="'+(a===R.anios?'yo':'')+'"><td>'+
+      (a===0 ? 'Sin Modalidad 40' : a+(a===1?' año':' años')) +
+      '</td><td class="num">'+r.edad+'</td><td class="num">'+pesos(r.final)+'</td></tr>';
+  }).join('');
+}
+
+/* ---- carga del archivo ---- */
+function aviso(txt, clase){
+  $('msg').innerHTML = '<div class="aviso '+(clase||'')+'">'+txt+'</div>';
+}
+
+async function procesar(file){
+  if(!file) return;
+  $('drop').classList.add('busy');
+  aviso('<b>Leyendo la constancia…</b>');
+  try{
+    D = await leerConstancia(file);
+    if(!D.nacimiento) throw new Error('No se encontró la CURP en el documento.');
+    if(!D.movimientos.length) throw new Error('No se encontró el historial de salarios. Asegúrate de subir el PDF original del IMSS, no una impresión o captura.');
+
+    $('nombre').value    = D.nombre || '';
+    $('nacimiento').value= iso(D.nacimiento);
+    $('semanas').value   = D.semanas || '';
+    $('fcorte').value    = iso(D.corte || new Date());
+    $('sbcActual').value = (D.sbcActual||0).toFixed(2);
+
+    // baja por defecto: dentro de dos meses
+    const hoy = new Date();
+    $('fbaja').value = iso(new Date(hoy.getFullYear(), hoy.getMonth()+2, 1));
+
+    let extra = '';
+    if(D.primeraAlta){
+      const ley73 = D.primeraAlta < new Date(1997,6,1);
+      extra = ley73
+        ? ' Tu primera alta es del '+fechaLarga(D.primeraAlta)+', así que estás en Ley 73.'
+        : ' <b>Atención:</b> tu primera alta es del '+fechaLarga(D.primeraAlta)+
+          ', posterior al 1 de julio de 1997. Estarías en Ley 97 y este cálculo no aplica a tu caso.';
+    }
+    aviso('<b>Listo.</b> Encontré '+D.movimientos.length+' movimientos de salario y '+
+          (D.semanas||'?')+' semanas cotizadas.'+extra,
+          D.primeraAlta && D.primeraAlta >= new Date(1997,6,1) ? 'err' : 'ok');
+
+    $('secDatos').classList.remove('oculto');
+    $('secPlan').classList.remove('oculto');
+    $('panel').classList.remove('oculto');
+    render();
+  }catch(e){
+    aviso('<b>No pude leer el documento.</b> '+e.message, 'err');
+  }finally{
+    $('drop').classList.remove('busy');
+  }
+}
+
+$('drop').onclick = ()=> $('file').click();
+$('file').onchange = e => procesar(e.target.files[0]);
+['dragenter','dragover'].forEach(ev=>$('drop').addEventListener(ev, e=>{
+  e.preventDefault(); $('drop').classList.add('over');
+}));
+['dragleave','drop'].forEach(ev=>$('drop').addEventListener(ev, e=>{
+  e.preventDefault(); $('drop').classList.remove('over');
+}));
+$('drop').addEventListener('drop', e=> procesar(e.dataTransfer.files[0]));
+
+$('tipoSBC').onchange = e=>{
+  $('campoSBCotro').classList.toggle('oculto', e.target.value!=='otro');
+  if(e.target.value==='otro' && !$('sbcM40').value)
+    $('sbcM40').value = ((+$('uma').value||117.31)*25).toFixed(2);
+  render();
+};
+['nombre','nacimiento','semanas','fcorte','sbcActual','fbaja','aniosM40','sbcM40',
+ 'edadPension','hijos','conyuge','uma','umaCrec','inflSal'].forEach(id=>{
+  $(id).addEventListener('change', render);
+  $(id).addEventListener('input', render);
+});
+
+/* ============================================================
+   6. Reporte de una hoja
+   ============================================================ */
+$('btnPDF').onclick = ()=>{
+  if(!R) return;
+  const {jsPDF} = window.jspdf;
+  const doc = new jsPDF({unit:'mm', format:'letter'});
+  const W = 215.9, M = 20, AN = W-2*M;
+  const INK=[20,33,28], GRIS=[110,120,114], BRASA=[138,106,34], CLARO=[233,235,229];
+  let y = 16;
+
+  const txt=(s,x,yy,size,style,color,align)=>{
+    doc.setFont('helvetica', style||'normal'); doc.setFontSize(size);
+    doc.setTextColor(...(color||INK));
+    doc.text(s, x, yy, align?{align}:undefined);
+  };
+
+  // encabezado
+  txt('ANÁLISIS PREVISIONAL — RESUMEN', M, y, 8, 'normal', GRIS); y+=6.5;
+  txt('Pensión IMSS Ley 73', M, y, 17, 'bold'); y+=6;
+  const sub = [R.nombre||'Asegurado',
+               'Baja: '+fechaLarga(R.baja),
+               R.anios ? R.anios+(R.anios===1?' año':' años')+' de Modalidad 40' : 'Sin Modalidad 40',
+               'Pensión a los '+R.edad+' años'].join('  —  ');
+  doc.setFont('helvetica','normal'); doc.setFontSize(8.4); doc.setTextColor(...GRIS);
+  doc.text(doc.splitTextToSize(sub, AN), M, y); y+=8;
+  doc.setDrawColor(...INK); doc.setLineWidth(.5); doc.line(M, y, W-M, y); y+=7;
+
+  // banda de indicadores
+  const kpis = [
+    [pesos(R.final), 'PENSIÓN MENSUAL ESTIMADA'],
+    [R.semanas.toLocaleString('es-MX'), 'SEMANAS AL PENSIONARSE'],
+    [pesos(R.prom), 'PROMEDIO SBC DIARIO'],
+    [(R.pct*100).toFixed(2)+'%', 'PORCENTAJE ART. 167']
+  ];
+  const kw = AN/4, kh = 18;
+  doc.setFillColor(...CLARO); doc.rect(M, y, AN, kh, 'F');
+  kpis.forEach((k,i)=>{
+    const cx = M + kw*i + kw/2;
+    if(i) { doc.setDrawColor(255,255,255); doc.setLineWidth(.8); doc.line(M+kw*i, y+2, M+kw*i, y+kh-2); }
+    txt(k[0], cx, y+8.5, 14, 'bold', INK, 'center');
+    txt(k[1], cx, y+13.5, 6.2, 'normal', GRIS, 'center');
+  });
+  y += kh + 9;
+
+  // tabla de escenarios
+  txt('Escenarios de Modalidad 40', M, y, 10.5, 'bold'); y+=4.5;
+  const opciones = [...new Set([0,1,3,5,R.anios])].sort((a,b)=>a-b);
+  const filas = opciones.map(a=>{
+    const r = calcular({anios:a});
+    return [ a===0 ? 'Sin Modalidad 40' : a+(a===1?' año':' años')+' al SBC elegido',
+             String(r.edad), r.semanas.toLocaleString('es-MX'), pesos(r.prom),
+             (r.pct*100).toFixed(2)+'%', a===0?'—':pesos(r.costo),
+             pesos(r.soloConyuge), pesos(r.final) ];
+  });
+  const iYo = opciones.indexOf(R.anios);
+  const encAsig = R.asign>0 ? 'Con asignaciones\n(+'+Math.round(R.asign*100)+'%)' : 'Pensión';
+  doc.autoTable({
+    startY: y, margin:{left:M, right:M},
+    head: [['Estrategia','Edad','Semanas','Prom. 250','% Art.167','Costo M40',
+            R.conyuge?'Solo esposa\n(15%)':'Sin asignaciones', encAsig]],
+    body: filas,
+    theme:'plain',
+    styles:{font:'helvetica', fontSize:7.6, cellPadding:{top:1.6,bottom:1.6,left:1.6,right:1.6},
+            textColor:INK, lineColor:[200,205,198], lineWidth:{bottom:.15}},
+    headStyles:{fillColor:INK, textColor:255, fontStyle:'bold', fontSize:7, halign:'right'},
+    columnStyles:{0:{halign:'left',cellWidth:33},1:{halign:'right',cellWidth:11},
+                  2:{halign:'right',cellWidth:17},3:{halign:'right',cellWidth:20},
+                  4:{halign:'right',cellWidth:18},5:{halign:'right',cellWidth:22},
+                  6:{halign:'right'},7:{halign:'right'}},
+    didParseCell: d=>{
+      if(d.section==='head' && d.column.index===0) d.cell.styles.halign='left';
+      if(d.section==='body' && d.row.index===iYo){
+        d.cell.styles.fontStyle='bold'; d.cell.styles.fillColor=[243,239,229];
+      }
+    }
+  });
+  y = doc.lastAutoTable.finalY + 7;
+
+  // desarrollo del cálculo
+  txt('Cómo se llega a la cifra', M, y, 10.5, 'bold'); y+=4.5;
+  const cuerpo = [
+    ['Promedio de las últimas 250 semanas',
+     (R.semanas>0?'':'')+'Historial real'+(R.semM40?' más '+R.semM40+' semanas en Modalidad 40':'')+', ponderado por días',
+     pesos2(R.prom)],
+    ['Grupo del artículo 167',
+     R.veces.toFixed(2)+' UMA de '+pesos2(R.umaPension)+' diarios',
+     (R.cb*100).toFixed(2)+'% + '+(R.inc*100).toFixed(3)+'%/año'],
+    ['Incrementos por antigüedad',
+     '('+R.semanas.toLocaleString('es-MX')+' − 500) ÷ 52 = '+R.nInc+' incrementos',
+     '+ '+(R.nInc*R.inc*100).toFixed(2)+'%'],
+    ['Pensión antes del factor de edad',
+     pesos2(R.prom)+' × 30.4 × '+(R.pct*100).toFixed(2)+'%', pesos(R.bruta)],
+    ['Factor de edad a los '+R.edad+' años',
+     '× '+(FACTOR_EDAD[R.edad]*100)+'%', pesos(R.conEdad)]
+  ];
+  if(R.asign>0){
+    const d=[]; if(R.conyuge) d.push('esposa 15%');
+    if(R.hijos) d.push(R.hijos+(R.hijos===1?' hijo':' hijos')+' × 10%');
+    cuerpo.push(['Asignaciones familiares', d.join(' + '), '+ '+Math.round(R.asign*100)+'%']);
+  }
+  cuerpo.push(['Pensión mensual','Más un aguinaldo anual del mismo monto', pesos(R.final)]);
+  doc.autoTable({
+    startY: y, margin:{left:M, right:M},
+    head: [['Paso','Cálculo','Resultado']],
+    body: cuerpo, theme:'plain',
+    styles:{font:'helvetica', fontSize:7.8, cellPadding:{top:1.7,bottom:1.7,left:1.6,right:1.6},
+            textColor:INK, lineColor:[200,205,198], lineWidth:{bottom:.15}},
+    headStyles:{fillColor:INK, textColor:255, fontStyle:'bold', fontSize:7},
+    columnStyles:{0:{cellWidth:46},1:{cellWidth:81},2:{halign:'right'}},
+    didParseCell: d=>{
+      if(d.section==='body' && d.row.index===cuerpo.length-1){
+        d.cell.styles.fontStyle='bold'; d.cell.styles.fillColor=[243,239,229];
+      }
+    }
+  });
+  y = doc.lastAutoTable.finalY + 7;
+
+  // puntos a cuidar
+  txt('Lo que hay que cuidar', M, y, 10.5, 'bold'); y+=5;
+  const pts = [];
+  if(R.anios>0){
+    const base = calcular({anios:0});
+    const gan = R.final - base.final;
+    if(gan>0) pts.push('La Modalidad 40 cuesta '+pesos(R.costo)+' y sube la pensión '+pesos(gan)+
+      ' al mes, de por vida. Se recupera en '+Math.ceil(R.costo/gan)+' meses.');
+    pts.push('La Modalidad 40 no da servicio médico. Entre la baja y la pensión hay que contratar '+
+      'la Modalidad 33 o un seguro privado.');
+    pts.push('Dos mensualidades vencidas causan baja automática y el salario alto ya no se recupera sin recargos.');
+  } else {
+    pts.push('Sin Modalidad 40 el promedio de 250 semanas queda en tu salario de patrón. '+
+             'Vale la pena comparar contra las filas de la tabla de arriba.');
+  }
+  if(R.hijos>0) pts.push('El '+(R.hijos*10)+'% por hijos es temporal: se pierde cuando dejen de estudiar o '+
+    'cumplan 25 años. Sin ellos la pensión baja a '+pesos(R.soloConyuge)+'. Presupuesta sobre esa cifra.');
+  pts.push('Saca una constancia nueva poco antes de la baja: la ventana de 250 semanas incluye tus últimos salarios.');
+  pts.push('Las pensiones están exentas de ISR hasta 15 UMA, unos '+pesos(R.uma*15*30)+' al mes.');
+
+  doc.setFontSize(7.9);
+  pts.forEach(t=>{
+    doc.setFont('helvetica','normal'); doc.setTextColor(...INK);
+    doc.setFillColor(...BRASA); doc.circle(M+1, y-1.1, .7, 'F');
+    const ls = doc.splitTextToSize(t, AN-5);
+    doc.text(ls, M+4, y);
+    y += ls.length*3.5 + 1.6;
+  });
+
+  // pie
+  y += 3;
+  doc.setDrawColor(200,205,198); doc.setLineWidth(.2); doc.line(M, y, W-M, y); y+=4;
+  doc.setFont('helvetica','normal'); doc.setFontSize(6.5); doc.setTextColor(...GRIS);
+  const legal = 'Supuestos: salario proyectado a +'+R.inflSal+'% anual desde el último movimiento de la constancia ('+
+    fechaLarga(R.corte)+'); UMA de '+pesos2(R.uma)+' diarios con crecimiento de '+R.umaCrec+
+    '% anual; SBC de Modalidad 40 de '+pesos2(R.sbcM40)+' diarios, fijo en pesos; tope de cotización de 25 UMA. '+
+    'Cálculo conforme al artículo 167 de la Ley del Seguro Social de 1973, con promedio nominal de las últimas '+
+    '250 semanas. No contempla periodos con dos patrones simultáneos ni semanas descontadas. '+
+    'Cifras de planeación, no montos garantizados por el IMSS; no constituye asesoría previsional.';
+  doc.text(doc.splitTextToSize(legal, AN), M, y);
+
+  const limpio = (R.nombre||'pension').split(' ')[0].replace(/[^A-Za-zÁÉÍÓÚÑñ]/g,'');
+  doc.save('Pension_IMSS_Ley73_'+limpio+'.pdf');
+};
+</script>
