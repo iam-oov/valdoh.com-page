@@ -165,7 +165,7 @@ footer.legal{margin-top:44px;padding-top:16px;border-top:1px solid var(--linea);
   <div class="franja">Esta página es <b>solo para Modalidad&nbsp;40 con Ley&nbsp;73</b>: te sirve únicamente si
      empezaste a cotizar en el IMSS <b>antes del 1 de julio de 1997</b>. Si empezaste después, tu pensión
      depende de tu AFORE (Ley&nbsp;97) y este cálculo no aplica.</div>
-  <div class="franja">🔒 <b>Todo se calcula en tu teléfono o computadora.</b> Tu constancia y tus datos
+  <div class="franja"><b>Todo se calcula en tu teléfono o computadora.</b> Tu constancia y tus datos
      no se envían ni se guardan en ningún lado.</div>
 </header>
 
@@ -222,7 +222,7 @@ footer.legal{margin-top:44px;padding-top:16px;border-top:1px solid var(--linea);
       </div>
       <div class="campo">
         <label for="sbcActual">Salario diario registrado (SBC) <span class="hint">pesos</span></label>
-        <input type="number" id="sbcActual" min="0" step="0.01">
+        <input type="text" id="sbcActual" inputmode="decimal" autocomplete="off">
       </div>
     </div>
   </section>
@@ -260,7 +260,7 @@ footer.legal{margin-top:44px;padding-top:16px;border-top:1px solid var(--linea);
       </div>
       <div class="campo oculto" id="campoSBCotro">
         <label for="sbcM40">Salario diario en Modalidad 40 <span class="hint">pesos</span></label>
-        <input type="number" id="sbcM40" min="0" step="0.01">
+        <input type="text" id="sbcM40" inputmode="decimal" autocomplete="off">
       </div>
       <div class="campo">
         <label for="edadPension">Edad a la que pediría la pensión</label>
@@ -294,7 +294,7 @@ footer.legal{margin-top:44px;padding-top:16px;border-top:1px solid var(--linea);
       <div class="campos">
         <div class="campo">
           <label for="uma">UMA diaria vigente <span class="hint">pesos</span></label>
-          <input type="number" id="uma" value="117.31" step="0.01" min="1">
+          <input type="text" id="uma" value="117.31" inputmode="decimal" autocomplete="off">
         </div>
         <div class="campo">
           <label for="umaCrec">Crecimiento anual de la UMA <span class="hint">%</span></label>
@@ -329,8 +329,8 @@ footer.legal{margin-top:44px;padding-top:16px;border-top:1px solid var(--linea);
     </table>
   </div>
 
-  <div class="escenarios oculto" id="costos">
-    <h3>Lo que pagarías por mantener la Modalidad 40</h3>
+  <div class="escenarios" id="costos">
+    <h3 id="costosTit">Lo que pagarías por mantener la Modalidad 40</h3>
     <table class="esc">
       <thead><tr><th>Año</th><th class="der">Pago al mes</th><th class="der">Pago en el año</th></tr></thead>
       <tbody id="tbCostos"></tbody>
@@ -361,7 +361,7 @@ footer.legal{margin-top:44px;padding-top:16px;border-top:1px solid var(--linea);
   artículo 164. Los salarios futuros y las UMA de años siguientes son proyecciones. La herramienta no
   contempla periodos con dos patrones simultáneos ni semanas descontadas por retiros parciales.
   Esto no constituye asesoría previsional; valida tu caso con un especialista antes de renunciar.
-  <br><br>Versión de la página: v1.2.3
+  <br><br>Versión de la página: v1.2.5
 </footer>
 </div>
 
@@ -398,6 +398,14 @@ const dias = (a,b) => Math.round((b-a)/86400000);
 const addA = (d,n) => new Date(d.getFullYear()+n, d.getMonth(), d.getDate());
 const pesos = n => '$'+Math.round(n).toLocaleString('es-MX');
 const pesos2 = n => '$'+n.toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+// campos de dinero como texto: acepta "." siempre y tolera coma o "$"
+const numVal = id => {
+  let s = String($(id).value).trim().replace(/[$\s]/g,'');
+  if(s.includes(',') && s.includes('.')) s = s.replace(/,/g,'');
+  else s = s.replace(',', '.');
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+};
 
 function edadEn(nac, f){
   let e = f.getFullYear()-nac.getFullYear();
@@ -605,13 +613,13 @@ function leerFormulario(over){
   const baja = dISO($('fbaja').value || iso(new Date()));
   const anios = over && over.anios!==undefined ? over.anios : +$('aniosM40').value;
   const finM40 = addA(baja, anios);
-  const uma = +$('uma').value || 117.31;
+  const uma = numVal('uma') || 117.31;
   const umaTope = uma*25;
 
   const t = $('tipoSBC').value;
   let sbcM40 = umaTope;
-  if(t==='mismo')      sbcM40 = +$('sbcActual').value || umaTope;
-  else if(t==='otro')  sbcM40 = +$('sbcM40').value || umaTope;
+  if(t==='mismo')      sbcM40 = numVal('sbcActual') || umaTope;
+  else if(t==='otro')  sbcM40 = numVal('sbcM40') || umaTope;
   else if(t!=='tope')  sbcM40 = uma * +t;
   sbcM40 = Math.min(sbcM40, umaTope);
 
@@ -626,7 +634,7 @@ function leerFormulario(over){
     nombre: $('nombre').value, nacimiento: nac,
     semanas: +$('semanas').value || 0,
     corte: dISO($('fcorte').value),
-    sbcActual: +$('sbcActual').value || 0,
+    sbcActual: numVal('sbcActual'),
     baja, anios, finM40, sbcM40, umaTope, uma,
     umaCrec: +$('umaCrec').value, inflSal: +$('inflSal').value,
     edad, fechaPension,
@@ -678,25 +686,28 @@ function render(){
       '</td><td class="num">'+r.edad+'</td><td class="num">'+pesos(r.final)+'</td></tr>';
   }).join('');
 
-  // costos de la Modalidad 40 por año calendario (la cuota sube cada año)
-  $('costos').classList.toggle('oculto', R.anios===0);
-  if(R.anios>0){
-    const porAnio = new Map();
-    let f = new Date(R.baja);
-    for(let i=0;i<R.anios*12;i++){
-      const y = f.getFullYear();
-      const mensual = R.sbcM40 * DIAS_MES * cuotaM40(y);
-      if(!porAnio.has(y)) porAnio.set(y, {meses:0, mensual, total:0});
-      const c = porAnio.get(y); c.meses++; c.total += mensual;
-      f = new Date(f.getFullYear(), f.getMonth()+1, 1);
-    }
-    $('tbCostos').innerHTML = [...porAnio.entries()].map(([y,c])=>
-      '<tr><td>'+y+(c.meses<12 ? ' · '+c.meses+(c.meses===1?' mes':' meses') : '')+
-      '</td><td class="num der">'+pesos(c.mensual)+'</td><td class="num">'+pesos(c.total)+'</td></tr>'
-    ).join('') +
-    '<tr class="yo"><td>Total de '+R.anios+(R.anios===1?' año':' años')+
-    '</td><td></td><td class="num">'+pesos(R.costo)+'</td></tr>';
+  // costos de la Modalidad 40 por año calendario (la cuota sube cada año);
+  // si el plan no usa Modalidad 40, se muestra el ejemplo de 5 años
+  const refA = R.anios>0 ? R.anios : 5;
+  const rc = R.anios>0 ? R : calcular({anios:5});
+  $('costosTit').textContent = R.anios>0
+    ? 'Lo que pagarías por tus '+refA+(refA===1?' año':' años')+' de Modalidad 40'
+    : 'Lo que pagarías por 5 años de Modalidad 40 (ejemplo)';
+  const porAnio = new Map();
+  let fm = new Date(rc.baja);
+  for(let i=0;i<refA*12;i++){
+    const y = fm.getFullYear();
+    const mensual = rc.sbcM40 * DIAS_MES * cuotaM40(y);
+    if(!porAnio.has(y)) porAnio.set(y, {meses:0, mensual, total:0});
+    const c = porAnio.get(y); c.meses++; c.total += mensual;
+    fm = new Date(fm.getFullYear(), fm.getMonth()+1, 1);
   }
+  $('tbCostos').innerHTML = [...porAnio.entries()].map(([y,c])=>
+    '<tr><td>'+y+(c.meses<12 ? ' · '+c.meses+(c.meses===1?' mes':' meses') : '')+
+    '</td><td class="num der">'+pesos(c.mensual)+'</td><td class="num">'+pesos(c.total)+'</td></tr>'
+  ).join('') +
+  '<tr class="yo"><td>Total de '+refA+(refA===1?' año':' años')+
+  '</td><td></td><td class="num">'+pesos(rc.costo)+'</td></tr>';
 }
 
 /* ---- carga del archivo ---- */
@@ -771,7 +782,7 @@ $('drop').addEventListener('drop', e=> procesar(e.dataTransfer.files[0]));
 $('tipoSBC').onchange = e=>{
   $('campoSBCotro').classList.toggle('oculto', e.target.value!=='otro');
   if(e.target.value==='otro' && !$('sbcM40').value)
-    $('sbcM40').value = ((+$('uma').value||117.31)*25).toFixed(2);
+    $('sbcM40').value = ((numVal('uma')||117.31)*25).toFixed(2);
   render();
 };
 ['nombre','nacimiento','semanas','fcorte','sbcActual','fbaja','aniosM40','sbcM40',
