@@ -136,6 +136,7 @@ table.esc th{text-align:left;font-size:12px;color:var(--tinta-45);font-weight:60
   padding:0 8px 6px 0;border-bottom:1px solid var(--linea)}
 table.esc td{padding:7px 8px 7px 0;border-bottom:1px solid var(--linea)}
 table.esc td:last-child,table.esc th:last-child{text-align:right;padding-right:0}
+table.esc td.der,table.esc th.der{text-align:right}
 table.esc tr.yo td{font-weight:700;background:rgba(138,106,34,.09)}
 
 button.descargar{
@@ -331,6 +332,14 @@ footer.legal{margin-top:44px;padding-top:16px;border-top:1px solid var(--linea);
     </table>
   </div>
 
+  <div class="escenarios oculto" id="costos">
+    <h3>Lo que pagarías por mantener la Modalidad 40</h3>
+    <table class="esc">
+      <thead><tr><th>Año</th><th class="der">Pago al mes</th><th class="der">Pago en el año</th></tr></thead>
+      <tbody id="tbCostos"></tbody>
+    </table>
+  </div>
+
   <button class="descargar" id="btnPDF">Descargar reporte de una hoja</button>
 </div>
 
@@ -357,7 +366,7 @@ footer.legal{margin-top:44px;padding-top:16px;border-top:1px solid var(--linea);
   artículo 164. Los salarios futuros y las UMA de años siguientes son proyecciones. La herramienta no
   contempla periodos con dos patrones simultáneos ni semanas descontadas por retiros parciales.
   Esto no constituye asesoría previsional; valida tu caso con un especialista antes de renunciar.
-  <br><br>Versión de la página: v1.1.1
+  <br><br>Versión de la página: v1.2.0
 </footer>
 </div>
 
@@ -673,6 +682,26 @@ function render(){
       (a===0 ? 'Sin Modalidad 40' : a+(a===1?' año':' años')) +
       '</td><td class="num">'+r.edad+'</td><td class="num">'+pesos(r.final)+'</td></tr>';
   }).join('');
+
+  // costos de la Modalidad 40 por año calendario (la cuota sube cada año)
+  $('costos').classList.toggle('oculto', R.anios===0);
+  if(R.anios>0){
+    const porAnio = new Map();
+    let f = new Date(R.baja);
+    for(let i=0;i<R.anios*12;i++){
+      const y = f.getFullYear();
+      const mensual = R.sbcM40 * DIAS_MES * cuotaM40(y);
+      if(!porAnio.has(y)) porAnio.set(y, {meses:0, mensual, total:0});
+      const c = porAnio.get(y); c.meses++; c.total += mensual;
+      f = new Date(f.getFullYear(), f.getMonth()+1, 1);
+    }
+    $('tbCostos').innerHTML = [...porAnio.entries()].map(([y,c])=>
+      '<tr><td>'+y+(c.meses<12 ? ' · '+c.meses+(c.meses===1?' mes':' meses') : '')+
+      '</td><td class="num der">'+pesos(c.mensual)+'</td><td class="num">'+pesos(c.total)+'</td></tr>'
+    ).join('') +
+    '<tr class="yo"><td>Total de '+R.anios+(R.anios===1?' año':' años')+
+    '</td><td></td><td class="num">'+pesos(R.costo)+'</td></tr>';
+  }
 }
 
 /* ---- carga del archivo ---- */
