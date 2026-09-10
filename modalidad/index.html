@@ -54,9 +54,11 @@ header.top p{margin:0;max-width:62ch;color:var(--tinta-70);font-size:17px}
 
 /* ---------- pasos ---------- */
 .paso{margin-bottom:38px}
-.paso-tit{display:flex;align-items:baseline;gap:11px;margin:0 0 4px}
+.paso-tit{display:flex;align-items:center;gap:12px;margin:0 0 6px}
 .paso-tit b{font-size:20px;font-weight:700;letter-spacing:-.01em}
-.paso-tit i{font-style:normal;font-size:13.5px;color:var(--tinta-45);font-variant-numeric:tabular-nums}
+.paso-tit i{font-style:normal;font-size:13.5px;font-weight:700;color:#fff;background:var(--verde);
+  padding:4px 13px;border-radius:999px;letter-spacing:.03em;white-space:nowrap;
+  font-variant-numeric:tabular-nums}
 .paso-sub{margin:0 0 16px;color:var(--tinta-70);font-size:16px;max-width:62ch}
 ul.previo{list-style:none;margin:0;padding:0}
 ul.previo li{position:relative;padding:0 0 13px 32px;font-size:16.5px;line-height:1.55;max-width:66ch}
@@ -185,7 +187,7 @@ footer.legal{margin-top:44px;padding-top:16px;border-top:1px solid var(--linea);
   </section>
 
   <section class="paso">
-    <div class="paso-tit"><b>Tu constancia</b><i>Paso 1</i></div>
+    <div class="paso-tit"><i>Paso 1</i><b>Tu constancia</b></div>
 
     <div id="drop">
       <button type="button" class="btn-elegir">Elegir mi constancia (PDF)</button>
@@ -196,7 +198,7 @@ footer.legal{margin-top:44px;padding-top:16px;border-top:1px solid var(--linea);
   </section>
 
   <section class="paso oculto" id="secDatos">
-    <div class="paso-tit"><b>Lo que dice tu constancia</b><i>Paso 2</i></div>
+    <div class="paso-tit"><i>Paso 2</i><b>Lo que dice tu constancia</b></div>
     <p class="paso-sub">Compara estos datos contra tu constancia. Si las semanas o el salario no coinciden,
        corrígelos aquí mismo: de esto depende que la aproximación sea buena.</p>
     <div class="campos">
@@ -224,7 +226,7 @@ footer.legal{margin-top:44px;padding-top:16px;border-top:1px solid var(--linea);
   </section>
 
   <section class="paso oculto" id="secPlan">
-    <div class="paso-tit"><b>Tu plan de retiro</b><i>Paso 3</i></div>
+    <div class="paso-tit"><i>Paso 3</i><b>Tu plan de retiro</b></div>
     <p class="paso-sub">Estos son los supuestos que puedes mover. El resultado se recalcula al instante.</p>
     <div class="campos">
       <div class="campo">
@@ -347,7 +349,7 @@ footer.legal{margin-top:44px;padding-top:16px;border-top:1px solid var(--linea);
   artículo 164. Los salarios futuros y las UMA de años siguientes son proyecciones. La herramienta no
   contempla periodos con dos patrones simultáneos ni semanas descontadas por retiros parciales.
   Esto no constituye asesoría previsional; valida tu caso con un especialista antes de renunciar.
-  <br><br>Versión de la página: v1.0.1
+  <br><br>Versión de la página: v1.0.2
 </footer>
 </div>
 
