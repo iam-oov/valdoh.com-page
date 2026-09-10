@@ -45,6 +45,7 @@ header.top p{margin:0;max-width:62ch;color:var(--tinta-70);font-size:17px}
 .franja{margin-top:18px;padding:14px 18px;background:var(--tinta);color:var(--papel);
   border-radius:3px;font-size:16.5px;line-height:1.5;max-width:72ch}
 .franja b{color:#fff}
+.franja+.franja{margin-top:10px}
 .grid{display:grid;grid-template-columns:1fr 400px;gap:52px;align-items:start;margin-top:34px}
 @media(max-width:900px){
   .grid{grid-template-columns:1fr;gap:34px}
@@ -147,9 +148,6 @@ button.descargar:disabled{background:var(--linea);color:var(--tinta-45);cursor:n
 
 .nohace{margin-top:56px;border-top:2px solid var(--tinta);padding-top:22px}
 .nohace h2{font-size:21px;margin:0 0 14px;letter-spacing:-.01em}
-.privacidad{margin:14px 0 0;padding:13px 16px;background:rgba(44,92,72,.09);
-  border-left:3px solid var(--verde);border-radius:0 2px 2px 0;
-  font-size:16.5px;font-weight:600;color:var(--tinta);line-height:1.5}
 .nohace ul{list-style:none;margin:0;padding:0;max-width:75ch}
 .nohace li{position:relative;padding:0 0 13px 32px;font-size:16px;line-height:1.55}
 .nohace li:before{content:"✕";position:absolute;left:2px;top:0;color:var(--alerta);font-weight:700}
@@ -167,6 +165,8 @@ footer.legal{margin-top:44px;padding-top:16px;border-top:1px solid var(--linea);
   <div class="franja">Esta página es <b>solo para Modalidad&nbsp;40 con Ley&nbsp;73</b>: te sirve únicamente si
      empezaste a cotizar en el IMSS <b>antes del 1 de julio de 1997</b>. Si empezaste después, tu pensión
      depende de tu AFORE (Ley&nbsp;97) y este cálculo no aplica.</div>
+  <div class="franja">🔒 <b>Todo se calcula en tu teléfono o computadora.</b> Tu constancia y tus datos
+     no se envían ni se guardan en ningún lado.</div>
 </header>
 
 <div class="grid">
@@ -195,8 +195,6 @@ footer.legal{margin-top:44px;padding-top:16px;border-top:1px solid var(--linea);
       <button type="button" class="btn-elegir">Elegir mi constancia (PDF)</button>
       <div class="small">Si estás en computadora, también puedes arrastrar el archivo hasta aquí</div>
     </div>
-    <p class="privacidad">🔒 Todo se calcula en tu teléfono o computadora. Tu constancia y tus datos
-       no se envían ni se guardan en ningún lado.</p>
     <input type="file" id="file" accept="application/pdf" class="oculto">
     <div id="msg"></div>
   </section>
@@ -363,7 +361,7 @@ footer.legal{margin-top:44px;padding-top:16px;border-top:1px solid var(--linea);
   artículo 164. Los salarios futuros y las UMA de años siguientes son proyecciones. La herramienta no
   contempla periodos con dos patrones simultáneos ni semanas descontadas por retiros parciales.
   Esto no constituye asesoría previsional; valida tu caso con un especialista antes de renunciar.
-  <br><br>Versión de la página: v1.2.1
+  <br><br>Versión de la página: v1.2.2
 </footer>
 </div>
 
