@@ -247,7 +247,11 @@ footer.legal{margin-top:44px;padding-top:16px;border-top:1px solid var(--linea);
       <div class="campo">
         <label for="tipoSBC">Salario con el que cotizarías</label>
         <select id="tipoSBC">
-          <option value="tope" selected>Al tope de 25 UMA</option>
+          <option value="tope" selected>Al tope: 25 UMA</option>
+          <option value="20">20 UMA</option>
+          <option value="15">15 UMA</option>
+          <option value="10">10 UMA</option>
+          <option value="5">5 UMA</option>
           <option value="mismo">El mismo que tengo hoy</option>
           <option value="otro">Otro monto</option>
         </select>
@@ -349,7 +353,7 @@ footer.legal{margin-top:44px;padding-top:16px;border-top:1px solid var(--linea);
   artículo 164. Los salarios futuros y las UMA de años siguientes son proyecciones. La herramienta no
   contempla periodos con dos patrones simultáneos ni semanas descontadas por retiros parciales.
   Esto no constituye asesoría previsional; valida tu caso con un especialista antes de renunciar.
-  <br><br>Versión de la página: v1.0.2
+  <br><br>Versión de la página: v1.1.0
 </footer>
 </div>
 
@@ -598,8 +602,9 @@ function leerFormulario(over){
 
   const t = $('tipoSBC').value;
   let sbcM40 = umaTope;
-  if(t==='mismo') sbcM40 = +$('sbcActual').value || umaTope;
-  if(t==='otro')  sbcM40 = +$('sbcM40').value || umaTope;
+  if(t==='mismo')      sbcM40 = +$('sbcActual').value || umaTope;
+  else if(t==='otro')  sbcM40 = +$('sbcM40').value || umaTope;
+  else if(t!=='tope')  sbcM40 = uma * +t;
   sbcM40 = Math.min(sbcM40, umaTope);
 
   const nac = dISO($('nacimiento').value);
@@ -741,6 +746,19 @@ $('tipoSBC').onchange = e=>{
     $('sbcM40').value = ((+$('uma').value||117.31)*25).toFixed(2);
   render();
 };
+
+// etiquetas del selector de SBC con su equivalente en pesos de la UMA vigente
+function opcionesSBC(){
+  const uma = +$('uma').value || 117.31;
+  [...$('tipoSBC').options].forEach(o=>{
+    if(o.value==='mismo' || o.value==='otro') return;
+    const n = o.value==='tope' ? 25 : +o.value;
+    o.textContent = (o.value==='tope' ? 'Al tope: 25 UMA' : n+' UMA') + ' — ' + pesos(uma*n) + ' diarios';
+  });
+}
+opcionesSBC();
+$('uma').addEventListener('input', opcionesSBC);
+$('uma').addEventListener('change', opcionesSBC);
 ['nombre','nacimiento','semanas','fcorte','sbcActual','fbaja','aniosM40','sbcM40',
  'edadPension','hijos','conyuge','uma','umaCrec','inflSal'].forEach(id=>{
   $(id).addEventListener('change', render);
