@@ -90,11 +90,10 @@ jobs:
           SHA=$(git rev-parse --short HEAD)
           sed -i "s|@SHA@|${SHA}|g" index.html memodi/index.html
 
-          # /modalidad/ is temporarily taken down. When it returns, re-add
-          # /modalidad/ to this check; it gets NO SHA stamp — its index.html
-          # is synced verbatim from iam-oov/suegro-modalidad40 and must stay
+          # /modalidad/ gets the 200 check but no SHA stamp: its index.html is
+          # synced verbatim from iam-oov/suegro-modalidad40, so it must stay
           # byte-identical to that repo's copy.
-          for path in / /memodi/ /style.css; do
+          for path in / /memodi/ /modalidad/ /style.css; do
             # || true: a dead server makes curl exit nonzero, which under
             # `set -e` would abort before the message below explains why.
             CODE=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:8088${path}" || true)
