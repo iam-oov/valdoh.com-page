@@ -398,7 +398,7 @@ footer.legal a{color:var(--verde);font-weight:600}
   artículo 164. Los salarios futuros y las UMA de años siguientes son proyecciones. La herramienta no
   contempla periodos con dos patrones simultáneos ni semanas descontadas por retiros parciales.
   Esto no constituye asesoría previsional; valida tu caso con un especialista antes de renunciar.
-  <br><br>v1.4.6 &middot; Hecha con 🧡 por
+  <br><br>v1.4.7 &middot; Hecha con 🧡 por
   <a href="https://github.com/iam-oov" target="_blank" rel="noopener">Osvaldo Hinojosa</a>
 </footer>
 </div>
@@ -748,25 +748,31 @@ function render(){
   // solo aparece cuando el plan usa Modalidad 40
   $('costos').classList.toggle('oculto', R.anios===0);
   if(R.anios>0){
-    $('costosTit').textContent =
-      'Lo que pagarías por tus '+R.anios+(R.anios===1?' año':' años')+' de Modalidad 40';
-    const porAnio = new Map();
-    let fm = new Date(R.inicioM40);
-    for(let i=0;i<R.anios*12;i++){
-      const y = fm.getFullYear();
-      const mensual = R.sbcM40 * DIAS_MES * cuotaM40(y);
-      if(!porAnio.has(y)) porAnio.set(y, {meses:0, mensual, total:0});
-      const c = porAnio.get(y); c.meses++; c.total += mensual;
-      fm = new Date(fm.getFullYear(), fm.getMonth()+1, 1);
-    }
-    $('tbCostos').innerHTML = [...porAnio.entries()].map(([y,c])=>
-      '<tr><td>'+y+(c.meses<12 ? ' · '+c.meses+(c.meses===1?' mes':' meses') : '')+
-      '</td><td class="num der">'+pesos(c.mensual)+'</td><td class="num">'+pesos(c.total)+'</td></tr>'
+    $('costosTit').textContent = tituloCostos(R);
+    $('tbCostos').innerHTML = pagosPorAnio(R).map(c=>
+      '<tr><td>'+c.etiqueta+'</td><td class="num der">'+pesos(c.mensual)+'</td><td class="num">'+pesos(c.total)+'</td></tr>'
     ).join('') +
-    '<tr class="yo"><td>Total de '+R.anios+(R.anios===1?' año':' años')+
+    '<tr class="yo"><td>Total de '+aniosTxt(R.anios)+
     '</td><td></td><td class="num">'+pesos(R.costo)+'</td></tr>';
   }
 }
+
+// costos de la Modalidad 40 por año calendario: la cuota sube cada año
+function pagosPorAnio(R){
+  const porAnio = new Map();
+  let fm = new Date(R.inicioM40);
+  for(let i=0;i<R.anios*12;i++){
+    const y = fm.getFullYear();
+    const mensual = R.sbcM40 * DIAS_MES * cuotaM40(y);
+    if(!porAnio.has(y)) porAnio.set(y, {meses:0, mensual, total:0});
+    const c = porAnio.get(y); c.meses++; c.total += mensual;
+    fm = new Date(fm.getFullYear(), fm.getMonth()+1, 1);
+  }
+  return [...porAnio.entries()].map(([y,c])=>({...c,
+    etiqueta: y+(c.meses<12 ? ' · '+c.meses+(c.meses===1?' mes':' meses') : '')}));
+}
+const aniosTxt = n => n+(n===1?' año':' años');
+const tituloCostos = R => 'Lo que pagarías por '+(R.anios===1 ? '' : 'tus ')+aniosTxt(R.anios)+' de Modalidad 40';
 
 /* ---- carga del archivo ---- */
 function aviso(txt, clase){
@@ -929,24 +935,24 @@ $('btnPDF').onclick = ()=>{
     const r = calcular({anios:a});
     return [ a===0 ? 'Sin Modalidad 40' : a+(a===1?' año':' años')+' al SBC elegido',
              String(r.edad), r.semanas.toLocaleString('es-MX'), pesos(r.prom),
-             (r.pct*100).toFixed(2)+'%', a===0?'—':pesos(r.costo/(a*12)), a===0?'—':pesos(r.costo),
+             (r.pct*100).toFixed(2)+'%', a===0?'—':pesos(r.costo),
              pesos(r.soloConyuge), pesos(r.final) ];
   });
   const iYo = opciones.indexOf(R.anios);
   const encAsig = R.asign>0 ? 'Con asignaciones\n(+'+Math.round(R.asign*100)+'%)' : 'Pensión';
   doc.autoTable({
     startY: y, margin:{left:M, right:M},
-    head: [['Estrategia','Edad','Semanas','Prom. 250','% Art.167','Pago al mes','Costo M40',
+    head: [['Estrategia','Edad','Semanas','Prom. 250','% Art.167','Costo M40',
             R.conyuge?'Solo esposa\n(15%)':'Sin asignaciones', encAsig]],
     body: filas,
     theme:'plain',
-    styles:{font:'helvetica', fontSize:7.6, cellPadding:{top:1.6,bottom:1.6,left:1.6,right:1.6},
+    styles:{font:'helvetica', fontSize:7.6, cellPadding:{top:1.2,bottom:1.2,left:1.6,right:1.6},
             textColor:INK, lineColor:[200,205,198], lineWidth:{bottom:.15}},
     headStyles:{fillColor:INK, textColor:255, fontStyle:'bold', fontSize:7, halign:'right'},
-    columnStyles:{0:{halign:'left',cellWidth:31},1:{halign:'right',cellWidth:9},
-                  2:{halign:'right',cellWidth:14},3:{halign:'right',cellWidth:16},
-                  4:{halign:'right',cellWidth:16},5:{halign:'right',cellWidth:17},
-                  6:{halign:'right',cellWidth:19},7:{halign:'right'},8:{halign:'right'}},
+    columnStyles:{0:{halign:'left',cellWidth:33},1:{halign:'right',cellWidth:11},
+                  2:{halign:'right',cellWidth:17},3:{halign:'right',cellWidth:20},
+                  4:{halign:'right',cellWidth:18},5:{halign:'right',cellWidth:22},
+                  6:{halign:'right'},7:{halign:'right'}},
     didParseCell: d=>{
       if(d.section==='head' && d.column.index===0) d.cell.styles.halign='left';
       if(d.section==='body' && d.row.index===iYo){
@@ -955,6 +961,31 @@ $('btnPDF').onclick = ()=>{
     }
   });
   y = doc.lastAutoTable.finalY + 7;
+
+  // pagos de la Modalidad 40 año por año, con los años en columnas para que la hoja no se desborde
+  if(R.anios>0){
+    txt(tituloCostos(R), M, y, 10.5, 'bold'); y+=4.5;
+    const pagos = pagosPorAnio(R);
+    doc.autoTable({
+      startY: y, margin:{left:M, right:M},
+      head: [['Año', ...pagos.map(c=>c.etiqueta), 'Total de '+aniosTxt(R.anios)]],
+      body: [['Pago al mes', ...pagos.map(c=>pesos(c.mensual)), ''],
+             ['Pago en el año', ...pagos.map(c=>pesos(c.total)), pesos(R.costo)]],
+      theme:'plain',
+      styles:{font:'helvetica', fontSize:7.6, cellPadding:{top:1.2,bottom:1.2,left:1.6,right:1.6},
+              textColor:INK, lineColor:[200,205,198], lineWidth:{bottom:.15}, halign:'right'},
+      headStyles:{fillColor:INK, textColor:255, fontStyle:'bold', fontSize:7},
+      columnStyles:{0:{halign:'left',cellWidth:24}},
+      didParseCell: d=>{
+        if(d.column.index===0) d.cell.styles.halign='left';
+        if(d.column.index===pagos.length+1){
+          d.cell.styles.fontStyle='bold';
+          if(d.section==='body') d.cell.styles.fillColor=[243,239,229];
+        }
+      }
+    });
+    y = doc.lastAutoTable.finalY + 7;
+  }
 
   // desarrollo del cálculo
   txt('Cómo se llega a la cifra', M, y, 10.5, 'bold'); y+=4.5;
@@ -983,7 +1014,7 @@ $('btnPDF').onclick = ()=>{
     startY: y, margin:{left:M, right:M},
     head: [['Paso','Cálculo','Resultado']],
     body: cuerpo, theme:'plain',
-    styles:{font:'helvetica', fontSize:7.8, cellPadding:{top:1.7,bottom:1.7,left:1.6,right:1.6},
+    styles:{font:'helvetica', fontSize:7.8, cellPadding:{top:1.3,bottom:1.3,left:1.6,right:1.6},
             textColor:INK, lineColor:[200,205,198], lineWidth:{bottom:.15}},
     headStyles:{fillColor:INK, textColor:255, fontStyle:'bold', fontSize:7},
     columnStyles:{0:{cellWidth:46},1:{cellWidth:81},2:{halign:'right'}},
