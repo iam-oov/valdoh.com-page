@@ -356,7 +356,7 @@ footer.legal a{color:var(--verde);font-weight:600}
   <div class="escenarios">
     <h3>Si cambias los años de Modalidad 40</h3>
     <table class="esc">
-      <thead><tr><th>Estrategia</th><th>Edad</th><th>Pensión</th></tr></thead>
+      <thead><tr><th>Estrategia</th><th>Edad</th><th class="der">Pago al mes</th><th>Pensión</th></tr></thead>
       <tbody id="tbEsc"></tbody>
     </table>
   </div>
@@ -398,7 +398,7 @@ footer.legal a{color:var(--verde);font-weight:600}
   artículo 164. Los salarios futuros y las UMA de años siguientes son proyecciones. La herramienta no
   contempla periodos con dos patrones simultáneos ni semanas descontadas por retiros parciales.
   Esto no constituye asesoría previsional; valida tu caso con un especialista antes de renunciar.
-  <br><br>v1.4.5 &middot; Hecha con 🧡 por
+  <br><br>v1.4.6 &middot; Hecha con 🧡 por
   <a href="https://github.com/iam-oov" target="_blank" rel="noopener">Osvaldo Hinojosa</a>
 </footer>
 </div>
@@ -740,7 +740,8 @@ function render(){
     return '<tr class="'+(a===R.anios?'yo':'')+'"><td>'+
       (a===0 ? 'Sin Modalidad 40' : a+(a===1?' año':' años')) +
       (a===R.anios ? ' <span class="tuplan">&larr; tu plan</span>' : '') +
-      '</td><td class="num">'+r.edad+'</td><td class="num">'+pesos(r.final)+'</td></tr>';
+      '</td><td class="num">'+r.edad+'</td><td class="num der">'+(a===0 ? '&mdash;' : pesos(r.costo/(a*12)))+
+      '</td><td class="num">'+pesos(r.final)+'</td></tr>';
   }).join('');
 
   // costos de la Modalidad 40 por año calendario (la cuota sube cada año);
@@ -928,24 +929,24 @@ $('btnPDF').onclick = ()=>{
     const r = calcular({anios:a});
     return [ a===0 ? 'Sin Modalidad 40' : a+(a===1?' año':' años')+' al SBC elegido',
              String(r.edad), r.semanas.toLocaleString('es-MX'), pesos(r.prom),
-             (r.pct*100).toFixed(2)+'%', a===0?'—':pesos(r.costo),
+             (r.pct*100).toFixed(2)+'%', a===0?'—':pesos(r.costo/(a*12)), a===0?'—':pesos(r.costo),
              pesos(r.soloConyuge), pesos(r.final) ];
   });
   const iYo = opciones.indexOf(R.anios);
   const encAsig = R.asign>0 ? 'Con asignaciones\n(+'+Math.round(R.asign*100)+'%)' : 'Pensión';
   doc.autoTable({
     startY: y, margin:{left:M, right:M},
-    head: [['Estrategia','Edad','Semanas','Prom. 250','% Art.167','Costo M40',
+    head: [['Estrategia','Edad','Semanas','Prom. 250','% Art.167','Pago al mes','Costo M40',
             R.conyuge?'Solo esposa\n(15%)':'Sin asignaciones', encAsig]],
     body: filas,
     theme:'plain',
     styles:{font:'helvetica', fontSize:7.6, cellPadding:{top:1.6,bottom:1.6,left:1.6,right:1.6},
             textColor:INK, lineColor:[200,205,198], lineWidth:{bottom:.15}},
     headStyles:{fillColor:INK, textColor:255, fontStyle:'bold', fontSize:7, halign:'right'},
-    columnStyles:{0:{halign:'left',cellWidth:33},1:{halign:'right',cellWidth:11},
-                  2:{halign:'right',cellWidth:17},3:{halign:'right',cellWidth:20},
-                  4:{halign:'right',cellWidth:18},5:{halign:'right',cellWidth:22},
-                  6:{halign:'right'},7:{halign:'right'}},
+    columnStyles:{0:{halign:'left',cellWidth:31},1:{halign:'right',cellWidth:9},
+                  2:{halign:'right',cellWidth:14},3:{halign:'right',cellWidth:16},
+                  4:{halign:'right',cellWidth:16},5:{halign:'right',cellWidth:17},
+                  6:{halign:'right',cellWidth:19},7:{halign:'right'},8:{halign:'right'}},
     didParseCell: d=>{
       if(d.section==='head' && d.column.index===0) d.cell.styles.halign='left';
       if(d.section==='body' && d.row.index===iYo){
