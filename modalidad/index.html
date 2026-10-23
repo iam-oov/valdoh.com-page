@@ -272,13 +272,16 @@ footer.legal a{color:var(--verde);font-weight:600}
       <div class="campo">
         <label for="tipoSBC">Salario con el que cotizarías</label>
         <select id="tipoSBC">
-          <option value="tope" selected>Al tope: 25 UMA</option>
-          <option value="20">20 UMA</option>
-          <option value="15">15 UMA</option>
-          <option value="10">10 UMA</option>
-          <option value="5">5 UMA</option>
+          <option value="regla" selected id="optRegla">Lo máximo permitido: último salario + 1 UMA</option>
           <option value="mismo">El mismo que tengo hoy</option>
           <option value="otro">Otro monto</option>
+          <optgroup label="DEPRECATED: regla anterior al 22 de octubre de 2026">
+            <option value="tope">DEPRECATED · Al tope: 25 UMA</option>
+            <option value="20">DEPRECATED · 20 UMA</option>
+            <option value="15">DEPRECATED · 15 UMA</option>
+            <option value="10">DEPRECATED · 10 UMA</option>
+            <option value="5">DEPRECATED · 5 UMA</option>
+          </optgroup>
         </select>
       </div>
       <div class="campo oculto" id="campoSBCotro">
@@ -393,7 +396,7 @@ footer.legal a{color:var(--verde);font-weight:600}
   artículo 164. Los salarios futuros y las UMA de años siguientes son proyecciones. La herramienta no
   contempla periodos con dos patrones simultáneos ni semanas descontadas por retiros parciales.
   Esto no constituye asesoría previsional; valida tu caso con un especialista antes de renunciar.
-  <br><br>Versión de la página: v1.3.1 &middot; Hecha con 🧡 por
+  <br><br>Versión de la página: v1.4.0 &middot; Hecha con 🧡 por
   <a href="https://github.com/iam-oov" target="_blank" rel="noopener">Osvaldo Hinojosa</a>
 </footer>
 </div>
@@ -416,6 +419,7 @@ const TABLA_167 = [
 const FACTOR_EDAD = {60:.75,61:.80,62:.85,63:.90,64:.95,65:1.00};
 const CUOTA_M40   = {2025:.13347,2026:.14438,2027:.15528,2028:.16619,2029:.17709};
 const cuotaM40 = a => a<=2024 ? .12256 : (CUOTA_M40[a] || .18800);
+const SM_GENERAL  = 315.04;   // salario mínimo general diario 2026
 
 const MESES_ES = {enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,
                   agosto:8,septiembre:9,octubre:10,noviembre:11,diciembre:12};
@@ -571,7 +575,7 @@ function construirLinea(p){
 
 function sbcEn(evs, d, p){
   if(d >= p.baja){
-    return (p.anios>0 && d < p.finM40) ? p.sbcM40 : null;
+    return (p.anios>0 && d >= p.inicioM40 && d < p.finM40) ? p.sbcM40 : null;
   }
   let v = null;
   for(const e of evs){
@@ -614,7 +618,7 @@ function calcular(over){
 
   const prom = promedio250(p);
   const semNuevas = Math.max(0, Math.round(dias(p.corte, p.baja)/7));
-  const semM40 = p.anios>0 ? Math.round(dias(p.baja, p.finM40)/7) : 0;
+  const semM40 = p.anios>0 ? Math.round(dias(p.inicioM40, p.finM40)/7) : 0;
   const semanas = p.semanas + semNuevas + semM40;
 
   const anosAdelante = Math.max(0, p.fechaPension.getFullYear() - new Date().getFullYear());
@@ -631,7 +635,7 @@ function calcular(over){
   const soloConyuge = conEdad * (1 + (p.conyuge ? .15 : 0));
 
   // costo de la Modalidad 40
-  let costo = 0, f = new Date(p.baja);
+  let costo = 0, f = new Date(p.inicioM40);
   for(let i=0;i<p.anios*12;i++){
     costo += p.sbcM40 * DIAS_MES * cuotaM40(f.getFullYear());
     f = new Date(f.getFullYear(), f.getMonth()+1, 1);
@@ -645,16 +649,29 @@ function leerFormulario(over){
   if(!D || !D.nacimiento) return null;
   const baja = dISO($('fbaja').value || iso(new Date()));
   const anios = over && over.anios!==undefined ? over.anios : +$('aniosM40').value;
-  const finM40 = addA(baja, anios);
   const uma = numVal('uma') || 117.31;
   const umaTope = uma*25;
+  const inflSal = +$('inflSal').value;
+
+  // regla del IMSS desde el 22-oct-2026 (DOF 21-oct-2026): tope de último salario al causar
+  // baja + 1 UMA, nunca menos del salario mínimo. Las opciones en UMA son la regla anterior.
+  const previos = construirLinea({baja, inflSal}).filter(e=>e.fecha < baja);
+  const sbcBaja = previos.length ? previos[previos.length-1].sbc : numVal('sbcActual');
+  const topeNuevo = Math.min(Math.max(sbcBaja + uma, SM_GENERAL), umaTope);
 
   const t = $('tipoSBC').value;
-  let sbcM40 = umaTope;
-  if(t==='mismo')      sbcM40 = numVal('sbcActual') || umaTope;
-  else if(t==='otro')  sbcM40 = numVal('sbcM40') || umaTope;
-  else if(t!=='tope')  sbcM40 = uma * +t;
-  sbcM40 = Math.min(sbcM40, umaTope);
+  const reglaAnterior = t==='tope' || /^\d+$/.test(t);
+  let sbcM40 = topeNuevo;
+  if(t==='mismo')      sbcM40 = numVal('sbcActual') || topeNuevo;
+  else if(t==='otro')  sbcM40 = numVal('sbcM40') || topeNuevo;
+  else if(t==='tope')  sbcM40 = umaTope;
+  else if(reglaAnterior) sbcM40 = uma * +t;
+  sbcM40 = Math.min(sbcM40, reglaAnterior ? umaTope : topeNuevo);
+
+  // sin pagos retroactivos: con la regla nueva la Modalidad 40 corre desde la solicitud, no desde la baja
+  const ahora = new Date(), hoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+  const inicioM40 = (reglaAnterior || baja > hoy) ? baja : hoy;
+  const finM40 = addA(inicioM40, anios);
 
   const nac = dISO($('nacimiento').value);
   let edad = over && over.edad!==undefined ? over.edad : +$('edadPension').value;
@@ -668,8 +685,8 @@ function leerFormulario(over){
     semanas: +$('semanas').value || 0,
     corte: dISO($('fcorte').value),
     sbcActual: numVal('sbcActual'),
-    baja, anios, finM40, sbcM40, umaTope, uma,
-    umaCrec: +$('umaCrec').value, inflSal: +$('inflSal').value,
+    baja, anios, inicioM40, finM40, sbcM40, umaTope, uma, topeNuevo, reglaAnterior,
+    umaCrec: +$('umaCrec').value, inflSal,
     edad, fechaPension,
     conyuge: $('conyuge').checked, hijos: +$('hijos').value
   };
@@ -687,13 +704,15 @@ function render(){
   $('cifra').textContent = pesos(R.final);
   $('bmCifra').textContent = pesos(R.final);
   actualizarBarra();
+  $('optRegla').textContent = 'Lo máximo permitido: '+pesos2(R.topeNuevo)+' diarios (último salario + 1 UMA)';
   const partes = [];
   if(R.conyuge) partes.push('esposa');
   if(R.hijos)   partes.push(R.hijos===1 ? '1 hijo estudiando' : R.hijos+' hijos estudiando');
   $('cifraPie').innerHTML =
     (R.anios ? R.anios+(R.anios===1?' año':' años')+' de Modalidad 40' : 'Sin Modalidad 40') +
     ' &middot; pensión a los ' + R.edad + ' años' +
-    (partes.length ? ' &middot; con ' + partes.join(' y ') : ' &middot; sin asignaciones');
+    (partes.length ? ' &middot; con ' + partes.join(' y ') : ' &middot; sin asignaciones') +
+    (R.reglaAnterior && R.anios ? '<br><b>DEPRECATED:</b> salario con la regla anterior, ya no disponible para inscripciones nuevas' : '');
   $('aguinaldo').innerHTML =
     'Más un aguinaldo anual de ' + pesos(R.final) + '. Ingreso del primer año: <b>' +
     pesos(R.final*13) + '</b>.';
@@ -729,7 +748,7 @@ function render(){
     $('costosTit').textContent =
       'Lo que pagarías por tus '+R.anios+(R.anios===1?' año':' años')+' de Modalidad 40';
     const porAnio = new Map();
-    let fm = new Date(R.baja);
+    let fm = new Date(R.inicioM40);
     for(let i=0;i<R.anios*12;i++){
       const y = fm.getFullYear();
       const mensual = R.sbcM40 * DIAS_MES * cuotaM40(y);
@@ -845,8 +864,8 @@ $('drop').addEventListener('drop', e=> procesar(e.dataTransfer.files[0]));
 
 $('tipoSBC').onchange = e=>{
   $('campoSBCotro').classList.toggle('oculto', e.target.value!=='otro');
-  if(e.target.value==='otro' && !$('sbcM40').value)
-    $('sbcM40').value = ((numVal('uma')||117.31)*25).toFixed(2);
+  if(e.target.value==='otro' && !$('sbcM40').value && R)
+    $('sbcM40').value = R.topeNuevo.toFixed(2);
   render();
 };
 ['nombre','nacimiento','semanas','fcorte','sbcActual','fbaja','aniosM40','sbcM40',
@@ -902,7 +921,7 @@ $('btnPDF').onclick = ()=>{
 
   // tabla de escenarios
   txt('Escenarios de Modalidad 40', M, y, 10.5, 'bold'); y+=4.5;
-  const opciones = [...new Set([0,1,3,5,R.anios])].sort((a,b)=>a-b);
+  const opciones = [0,1,2,3,4,5];
   const filas = opciones.map(a=>{
     const r = calcular({anios:a});
     return [ a===0 ? 'Sin Modalidad 40' : a+(a===1?' año':' años')+' al SBC elegido',
@@ -1008,7 +1027,10 @@ $('btnPDF').onclick = ()=>{
   doc.setFont('helvetica','normal'); doc.setFontSize(6.5); doc.setTextColor(...GRIS);
   const legal = 'Supuestos: salario proyectado a +'+R.inflSal+'% anual desde el último movimiento de la constancia ('+
     fechaLarga(R.corte)+'); UMA de '+pesos2(R.uma)+' diarios con crecimiento de '+R.umaCrec+
-    '% anual; SBC de Modalidad 40 de '+pesos2(R.sbcM40)+' diarios, fijo en pesos; tope de cotización de 25 UMA. '+
+    '% anual; SBC de Modalidad 40 de '+pesos2(R.sbcM40)+' diarios, fijo en pesos; '+
+    (R.reglaAnterior
+      ? 'tope de 25 UMA de la regla anterior (DEPRECATED: ya no disponible para inscripciones nuevas desde el 22 de octubre de 2026). '
+      : 'tope de último salario al causar baja + 1 UMA, sin pagos retroactivos (acuerdo del IMSS, DOF 21 de octubre de 2026). ')+
     'Cálculo conforme al artículo 167 de la Ley del Seguro Social de 1973, con promedio nominal de las últimas '+
     '250 semanas. No contempla periodos con dos patrones simultáneos ni semanas descontadas. '+
     'Cifras de planeación, no montos garantizados por el IMSS; no constituye asesoría previsional.';
