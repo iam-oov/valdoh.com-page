@@ -84,6 +84,7 @@ ul.previo a{color:var(--verde);font-weight:600}
 .aviso.err{border-color:var(--alerta)}
 .aviso.ok{border-color:var(--verde)}
 .aviso b{display:block;margin-bottom:2px}
+.aviso .btn-elegir{margin-top:12px;font-size:1.0625rem;padding:12px 22px}
 
 /* ---------- formulario ---------- */
 .campos{display:grid;grid-template-columns:1fr 1fr;gap:20px 26px}
@@ -398,7 +399,7 @@ footer.legal a{color:var(--verde);font-weight:600}
   artículo 164. Los salarios futuros y las UMA de años siguientes son proyecciones. La herramienta no
   contempla periodos con dos patrones simultáneos ni semanas descontadas por retiros parciales.
   Esto no constituye asesoría previsional; valida tu caso con un especialista antes de renunciar.
-  <br><br>v1.4.7 &middot; Hecha con 🧡 por
+  <br><br>v1.4.8 &middot; Hecha con 🧡 por
   <a href="https://github.com/iam-oov" target="_blank" rel="noopener">Osvaldo Hinojosa</a>
 </footer>
 </div>
@@ -540,13 +541,33 @@ async function leerConstancia(file){
       });
     }
     const a = l.match(reAlta);
-    if(a) out.altas.push({alta: dmy(a[1]), vigente: /vigente/i.test(a[2])});
+    if(a){
+      const vigente = /vigente/i.test(a[2]);
+      out.altas.push({alta: dmy(a[1]), baja: vigente ? null : dmy(a[2]), vigente});
+    }
   });
 
   out.movimientos.sort((x,y)=>x.fecha-y.fecha);
   if(out.altas.length) out.primeraAlta = out.altas.map(a=>a.alta).sort((x,y)=>x-y)[0];
   if(out.movimientos.length) out.sbcActual = out.movimientos[out.movimientos.length-1].sbc;
 
+  return out;
+}
+
+// periodos sin ningún patrón en los 5 años antes de la fecha de la constancia
+function huecos5(d){
+  if(!d.altas.length) return [];
+  const fin = d.corte || new Date(), ini = addA(fin, -5);
+  const tramos = d.altas.map(a=>({alta:a.alta, baja:a.baja || fin})).sort((x,y)=>x.alta-y.alta);
+  const out = [];
+  let cubierto = new Date(+ini-86400000);   // último día con patrón
+  tramos.forEach(t=>{
+    if(t.baja < cubierto) return;
+    if(dias(cubierto, t.alta) > 1)
+      out.push({desde: new Date(+cubierto+86400000), hasta: new Date(+t.alta-86400000)});
+    if(t.baja > cubierto) cubierto = t.baja;
+  });
+  if(dias(cubierto, fin) > 1) out.push({desde: new Date(+cubierto+86400000), hasta: null});
   return out;
 }
 
@@ -834,14 +855,39 @@ async function procesar(file){
       extra += ' <b>Tu constancia tiene más de 3 meses:</b> descarga una nueva en el portal del IMSS '+
                'para que el cálculo incluya tus últimos salarios.';
     }
-    aviso('<b>Listo.</b> Encontré '+D.movimientos.length+' movimientos de salario y '+
-          (D.semanas||'?')+' semanas cotizadas.'+extra,
-          D.primeraAlta ? 'ok' : '');
+    const listo = '<b>Listo.</b> Encontré '+D.movimientos.length+' movimientos de salario y '+
+                  (D.semanas||'?')+' semanas cotizadas.'+extra;
+    const mostrar = ()=>{
+      $('secDatos').classList.remove('oculto');
+      $('secPlan').classList.remove('oculto');
+      $('panel').classList.remove('oculto');
+      render();
+    };
 
-    $('secDatos').classList.remove('oculto');
-    $('secPlan').classList.remove('oculto');
-    $('panel').classList.remove('oculto');
-    render();
+    // esta versión solo sirve con los últimos 5 años cotizados sin interrupción
+    const h = huecos5(D);
+    if(h.length){
+      $('secDatos').classList.add('oculto');
+      $('secPlan').classList.add('oculto');
+      $('panel').classList.add('oculto');
+      actualizarBarra();
+      const tramo = h[0].hasta
+        ? 'Del '+fechaLarga(h[0].desde)+' al '+fechaLarga(h[0].hasta)
+        : 'Desde el '+fechaLarga(h[0].desde);
+      aviso('<b>Tu constancia tiene huecos en los últimos 5 años.</b> '+tramo+
+            ' no aparece ningún patrón'+(h.length>1 ? ' (y hay '+(h.length-1)+' hueco'+(h.length>2?'s':'')+' más)' : '')+
+            '. Esta calculadora solo funciona si cotizaste los últimos 5 años seguidos, sin huecos, '+
+            'así que el resultado puede salir equivocado.'+
+            '<br><button type="button" class="btn-elegir" id="btnHuecos">Ver el cálculo de todos modos</button>', 'err');
+      $('btnHuecos').onclick = ()=>{
+        aviso(listo+' <b>Ojo:</b> tu constancia tiene huecos en los últimos 5 años; toma el resultado con cuidado.', 'err');
+        mostrar();
+      };
+      return;
+    }
+
+    aviso(listo, D.primeraAlta ? 'ok' : '');
+    mostrar();
   }catch(e){
     aviso('<b>No pude leer el documento.</b> '+e.message, 'err');
   }finally{
