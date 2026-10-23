@@ -398,7 +398,7 @@ footer.legal a{color:var(--verde);font-weight:600}
   artículo 164. Los salarios futuros y las UMA de años siguientes son proyecciones. La herramienta no
   contempla periodos con dos patrones simultáneos ni semanas descontadas por retiros parciales.
   Esto no constituye asesoría previsional; valida tu caso con un especialista antes de renunciar.
-  <br><br>v1.4.3 &middot; Hecha con 🧡 por
+  <br><br>v1.4.4 &middot; Hecha con 🧡 por
   <a href="https://github.com/iam-oov" target="_blank" rel="noopener">Osvaldo Hinojosa</a>
 </footer>
 </div>
@@ -1013,7 +1013,10 @@ $('btnPDF').onclick = ()=>{
     'cumplan 25 años. Sin ellos la pensión baja a '+pesos(R.soloConyuge)+'. Presupuesta sobre esa cifra.');
   pts.push('Antes de darte de baja, descarga otra vez tu constancia y vuelve a hacer este cálculo. Así usa tus '+
     'salarios reales y no una estimación, y sabrás con cuánto puedes cotizar en Modalidad 40.');
-  pts.push('Las pensiones están exentas de ISR hasta 15 UMA, unos '+pesos(R.uma*15*30)+' al mes.');
+  // las pensiones no pagan ISR hasta 15 UMA; solo se avisa cuando la pensión pasa de ese límite
+  const exento = R.uma*15*30;
+  if(R.final > exento) pts.push('Tu pensión pasa del límite libre de impuestos, unos '+pesos(exento)+' al mes: '+
+    'sobre los '+pesos(R.final-exento)+' que sobran pagarías ISR, así que recibirías un poco menos.');
 
   doc.setFontSize(7.9);
   pts.forEach(t=>{
