@@ -207,8 +207,8 @@ footer.legal a{color:var(--verde);font-weight:600}
       <li>Tu <b>constancia de semanas cotizadas</b> en PDF. Se descarga gratis en el
           <a href="https://serviciosdigitales.imss.gob.mx/semanascotizadas-web/usuarios/IngresoAsegurado"
              target="_blank" rel="noopener">portal del IMSS</a> con tu CURP, tu NSS y un correo electrónico.</li>
-      <li>Que sea el <b>PDF original</b> que envía el IMSS, el que trae tu historial de salarios por patrón.
-          <b>No sirve una foto, un escaneo ni una impresión.</b></li>
+      <li>De preferencia el <b>PDF original</b> que envía el IMSS, el que trae tu historial de salarios por patrón.
+          También sirve un PDF con <b>fotos de las hojas</b>, pero tarda más y puede leer mal algún salario.</li>
       <li>Que sea <b>reciente</b>, de preferencia descargada este mes: el cálculo usa tus últimos salarios,
           y una constancia vieja los deja fuera.</li>
     </ul>
@@ -399,7 +399,7 @@ footer.legal a{color:var(--verde);font-weight:600}
   artículo 164. Los salarios futuros y las UMA de años siguientes son proyecciones. La herramienta no
   contempla periodos con dos patrones simultáneos ni semanas descontadas por retiros parciales.
   Esto no constituye asesoría previsional; valida tu caso con un especialista antes de renunciar.
-  <br><br>v1.4.8 &middot; Hecha con 🧡 por
+  <br><br>v1.5.0 &middot; Hecha con 🧡 por
   <a href="https://github.com/iam-oov" target="_blank" rel="noopener">Osvaldo Hinojosa</a>
 </footer>
 </div>
@@ -465,10 +465,79 @@ function fechaLarga(d){
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-async function leerConstancia(file){
+// lectura de fotos (OCR): Tesseract se descarga solo si el PDF no trae texto
+const TESS = 'https://cdn.jsdelivr.net/npm/';
+let tessCargado = null;
+function cargarTesseract(){
+  if(!tessCargado) tessCargado = new Promise((ok, mal)=>{
+    const s = document.createElement('script');
+    s.src = TESS+'tesseract.js@5.1.1/dist/tesseract.min.js';
+    s.integrity = 'sha384-GJqSu7vueQ9qN0E9yLPb3Wtpd7OrgK8KmYzC8T1IysG1bcvxvIO4qtYR/D3A991F';
+    s.crossOrigin = 'anonymous';
+    s.onload = ok;
+    s.onerror = ()=>{ tessCargado = null; mal(new Error('No pude descargar el lector de fotos. Revisa tu conexión a internet.')); };
+    document.head.appendChild(s);
+  });
+  return tessCargado;
+}
+
+// corrige las confusiones típicas del OCR en fechas y montos: O por 0, l por 1, S por $
+function normOCR(l){
+  return l.replace(/(?<=\d)[Oo]|[Oo](?=\d)/g,'0').replace(/(?<=\d)[lI|](?=\d)/g,'1')
+          .replace(/(\d)\s*\/\s*(\d)/g,'$1/$2').replace(/[S§]\s*(?=\d)/g,'$ ');
+}
+
+async function leerFotos(pdf, avance){
+  await cargarTesseract();
+  const w = await Tesseract.createWorker('spa', 1, {
+    workerPath: TESS+'tesseract.js@5.1.1/dist/worker.min.js',
+    corePath:   TESS+'tesseract.js-core@5.1.1',
+    langPath:   TESS+'@tesseract.js-data/spa@1.0.0/4.0.0_best_int'
+  });
+  const lineas = [];
+  try{
+    await w.setParameters({tessedit_pageseg_mode:'3'});   // el valor por defecto (6) pierde la mitad de los renglones
+    for(let p=1; p<=pdf.numPages; p++){
+      avance(p, pdf.numPages);
+      const page = await pdf.getPage(p);
+      const vp1 = page.getViewport({scale:1});
+      // 2400 px de ancho, a color: lo que más renglones leyó bien entre 2000 y 3200 px, color y gris
+      const vp = page.getViewport({scale: Math.min(4, 2400/vp1.width)});
+      const cv = document.createElement('canvas');
+      cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
+      await page.render({canvasContext: cv.getContext('2d'), viewport: vp}).promise;
+      const {data} = await w.recognize(cv);
+      cv.width = cv.height = 0;   // libera la memoria antes de la siguiente página
+      data.text.split('\n').forEach(l=>{ l = normOCR(l).replace(/\s+/g,' ').trim(); if(l) lineas.push(l); });
+    }
+  }finally{
+    await w.terminate();
+  }
+  return lineas;
+}
+
+// en fotos, descarta renglones mal leídos usando el orden de la constancia: las fechas
+// van de la más nueva a la más vieja, y un salario no salta al doble ni a la mitad de sus vecinos
+function limpiarFoto(movs){
+  // subsecuencia más larga de fechas que no suben (son pocos renglones)
+  const n = movs.length, largo = Array(n).fill(1), prev = Array(n).fill(-1);
+  for(let i=0;i<n;i++) for(let j=0;j<i;j++)
+    if(movs[j].fecha >= movs[i].fecha && largo[j]+1 > largo[i]){ largo[i] = largo[j]+1; prev[i] = j; }
+  const orden = [];
+  for(let k = largo.indexOf(Math.max(...largo)); k >= 0; k = prev[k]) orden.unshift(movs[k]);
+
+  return orden.filter((m,i)=>{
+    const v = orden.slice(Math.max(0,i-2), i).concat(orden.slice(i+1, i+3)).map(x=>x.sbc).sort((a,b)=>a-b);
+    if(!v.length) return true;
+    const med = v[Math.floor(v.length/2)];
+    return m.sbc >= med/2 && m.sbc <= med*2;
+  });
+}
+
+async function leerConstancia(file, avance){
   const buf = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({data:buf}).promise;
-  const lineas = [];
+  let lineas = [];
 
   for(let p=1; p<=pdf.numPages; p++){
     const page = await pdf.getPage(p);
@@ -487,8 +556,12 @@ async function leerConstancia(file){
     });
   }
 
+  // sin texto: son fotos o un escaneo
+  const foto = lineas.join('').length < 200;
+  if(foto) lineas = await leerFotos(pdf, avance);
+
   const texto = lineas.join('\n');
-  const out = {movimientos:[], altas:[]};
+  const out = {movimientos:[], altas:[], foto};
 
   // --- identidad, tomada de la cadena original cuando existe ---
   const nom = texto.match(/Apellido Paterno:([^|]*)\|Apellido Materno:([^|]*)\|Nombre del Asegurado:([^|]*)\|/i);
@@ -517,6 +590,12 @@ async function leerConstancia(file){
       const m = lineas[j].match(/^(\d{2,5})$/); if(m){ sem=[null,m[1]]; break; }
     }
   }
+  if(!sem && foto){   // en fotos el número queda en un renglón con ruido
+    const i = lineas.findIndex(l=>/Semanas cotizadas IMSS/i.test(l));
+    if(i>=0) for(let j=i+1;j<Math.min(i+7,lineas.length);j++){
+      const m = lineas[j].match(/(?:^|[\s|])(\d{3,4})(?=[\s|]|$)/); if(m){ sem=m; break; }
+    }
+  }
   if(sem) out.semanas = +sem[1];
 
   // --- fecha de emisión ---
@@ -526,13 +605,30 @@ async function leerConstancia(file){
     const m = texto.match(/(\d{2})\s*\/\s*(\d{2})\s*\/\s*(\d{4})\s*DD/);
     if(m) out.corte = new Date(+m[3], +m[2]-1, +m[1]);
   }
+  if(!out.corte && foto){   // en fotos "DD MM YYYY" queda en el renglón de abajo
+    const i = lineas.findIndex(l=>/DD\s+MM\s+YY/.test(l));
+    for(let j=i; i>=0 && j>=Math.max(0,i-2); j--){
+      const m = lineas[j].match(/(\d{2})\/(\d{2})\/(\d{4})/);
+      if(m){ out.corte = new Date(+m[3], +m[2]-1, +m[1]); break; }
+    }
+  }
 
   // --- movimientos de salario y bloques de patrón ---
   const reMov = /(MODIFICACION DE SALARIO|REINGRESO|BAJA|ALTA)\s+(\d{2}\/\d{2}\/\d{4})\s+\$?\s*([\d,]+(?:\.\d+)?)/i;
   const reAlta = /Fecha de alta\s+(\d{2}\/\d{2}\/\d{4})\s+Fecha de baja\s+(Vigente|\d{2}\/\d{2}\/\d{4})/i;
+  // en fotos el tipo de movimiento sale con ruido: basta la fecha seguida del monto con $
+  const reFoto = /(\d{2}\/\d{2}\/\d{4})[^$\d]{0,25}\$\s*(\d{1,6}(?:[.,]\d{1,2})?)(?!\d)/;
+  const fechaOK = s => { const d = dmy(s); return d.getFullYear()>=1943 && d <= new Date() &&
+                                                  d.getDate() === +s.slice(0,2) && d.getMonth()+1 === +s.slice(3,5); };
 
   lineas.forEach(l=>{
-    const m = l.match(reMov);
+    let m = l.match(reMov);
+    if(foto){
+      const f = !reAlta.test(l) && l.match(reFoto);
+      const sbc = f ? parseFloat(f[2].replace(',','.')) : 0;
+      m = f && fechaOK(f[1]) && sbc > 0 && sbc < 100000
+        ? [f[0], /BAJA/i.test(l) ? 'BAJA' : 'MOD', f[1], String(sbc)] : null;
+    }
     if(m){
       out.movimientos.push({
         fecha: dmy(m[2]),
@@ -547,8 +643,17 @@ async function leerConstancia(file){
     }
   });
 
+  if(foto) out.movimientos = limpiarFoto(out.movimientos);
   out.movimientos.sort((x,y)=>x.fecha-y.fecha);
   if(out.altas.length) out.primeraAlta = out.altas.map(a=>a.alta).sort((x,y)=>x-y)[0];
+
+  // con fotos de solo algunas hojas, la primera alta puede estar en las que faltan
+  if(foto){
+    const pags = [...texto.matchAll(/P[áa]gina\s+(\d+)\s+de\s+(\d+)/gi)];
+    const total = pags.length ? Math.max(...pags.map(x=>+x[2])) : 0;
+    const completo = total > 0 && new Set(pags.map(x=>x[1])).size >= total;
+    if(!completo && out.primeraAlta >= new Date(1997,6,1)) out.primeraAlta = null;
+  }
   if(out.movimientos.length) out.sbcActual = out.movimientos[out.movimientos.length-1].sbc;
 
   return out;
@@ -804,16 +909,16 @@ async function procesar(file){
   if(!file) return;
 
   // validación previa: todo es local, esto solo protege el navegador del usuario
-  if(file.size > 10*1024*1024){
-    aviso('<b>El archivo es demasiado grande.</b> La constancia del IMSS pesa menos de 1 MB; '+
-          'revisa que hayas elegido el PDF correcto.', 'err');
+  if(file.size > 50*1024*1024){
+    aviso('<b>El archivo es demasiado grande.</b> La constancia del IMSS pesa menos de 1 MB, y aun '+
+          'con fotos no debería pasar de 50 MB; revisa que hayas elegido el PDF correcto.', 'err');
     $('file').value = '';
     return;
   }
   const cab = new Uint8Array(await file.slice(0,4).arrayBuffer());
   if(!(cab[0]===0x25 && cab[1]===0x50 && cab[2]===0x44 && cab[3]===0x46)){ // "%PDF"
-    aviso('<b>Ese archivo no es un PDF.</b> Sube la constancia original que descargaste '+
-          'del portal del IMSS, sin convertirla ni escanearla.', 'err');
+    aviso('<b>Ese archivo no es un PDF.</b> Sube la constancia que descargaste del portal del IMSS, '+
+          'o un PDF con las fotos de sus hojas.', 'err');
     $('file').value = '';
     return;
   }
@@ -821,9 +926,12 @@ async function procesar(file){
   $('drop').classList.add('busy');
   aviso('<b>Leyendo la constancia…</b>');
   try{
-    D = await leerConstancia(file);
-    if(!D.nacimiento) throw new Error('No se encontró la CURP en el documento.');
-    if(!D.movimientos.length) throw new Error('No se encontró el historial de salarios. Asegúrate de subir el PDF original del IMSS, no una impresión o captura.');
+    D = await leerConstancia(file, (p, n)=>
+      aviso('<b>Leyendo las fotos… página '+p+' de '+n+'.</b> Tarda unos segundos por página.'));
+    const fotoMal = D.foto ? ' Revisa que las fotos se vean claras y derechas, o mejor descarga el PDF original del portal del IMSS.' : '';
+    if(!D.nacimiento) throw new Error('No se encontró la CURP en el documento.'+fotoMal);
+    if(!D.movimientos.length) throw new Error('No se encontró el historial de salarios.'+
+      (fotoMal || ' Asegúrate de subir el PDF original del IMSS.'));
 
     $('nombre').value    = D.nombre || '';
     $('nacimiento').value= iso(D.nacimiento);
@@ -854,6 +962,13 @@ async function procesar(file){
     if(D.corte && dias(D.corte, new Date()) > 92){
       extra += ' <b>Tu constancia tiene más de 3 meses:</b> descarga una nueva en el portal del IMSS '+
                'para que el cálculo incluya tus últimos salarios.';
+    }
+    if(D.foto){
+      extra += ' <b>Lo leí de fotos:</b> puede faltar algún salario o venir uno mal. '+
+               'Revisa abajo tus semanas, '+(D.corte ? '' : 'la fecha de tu constancia ')+'y tu salario actual.';
+      if(!D.altas.length)
+        extra += ' <b>No pude leer las fechas de alta y baja de tus patrones,</b> así que no revisé si tienes '+
+                 'huecos en los últimos 5 años.';
     }
     const listo = '<b>Listo.</b> Encontré '+D.movimientos.length+' movimientos de salario y '+
                   (D.semanas||'?')+' semanas cotizadas.'+extra;
